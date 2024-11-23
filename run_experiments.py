@@ -44,7 +44,6 @@ def validate_positions(my_map, starts, goals):
             raise ValueError(f"Invalid position {pos} - it is blocked by an obstacle.")
 
 
-
 def import_dynamic_mapf_instance(filename):
     with open(filename, 'r') as f:
         dynamic_states = []  # List to store all map states
@@ -91,7 +90,6 @@ def import_dynamic_mapf_instance(filename):
             dynamic_states.append((timestep, current_map, starts, current_goals))
 
     return dynamic_states
-
 
 
 if __name__ == '__main__':
@@ -143,7 +141,7 @@ if __name__ == '__main__':
             paths = solver.find_solution(args.disjoint)
         elif args.solver == "Independent":
             print("***Run Independent***")
-            solver = IndependentSolver(my_map, starts, goals)
+            solver = IndependentSolver(my_map, starts, goals, dynamic_states)
             paths = solver.find_solution()
         elif args.solver == "Prioritized":
             print("***Run Prioritized***")
@@ -161,4 +159,3 @@ if __name__ == '__main__':
         if not args.batch:
             animation = Animation(dynamic_states, paths)
             animation.show()
-
