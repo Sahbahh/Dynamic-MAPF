@@ -49,7 +49,7 @@ class Animation:
 
         # Initialize animation parameters
         self.current_timestep = 0
-        self.total_timesteps = max([state[0] for state in dynamic_states]) + 1
+        self.total_timesteps = max([state[0] for state in dynamic_states]) + 10
 
         # Create animation
         self.animation = animation.FuncAnimation(self.fig, self._animate_frame, init_func=self._init_animation,
@@ -66,16 +66,19 @@ class Animation:
         for i in range(len(self.my_map)):
             for j in range(len(self.my_map[0])):
                 if self.my_map[i][j]:  # Blocked cell
-                    rect = Rectangle((j - 0.5, len(self.my_map) - 1 - i - 0.5), 1, 1, facecolor='gray', edgecolor='black')
+                    rect = Rectangle((j - 0.5, len(self.my_map) - 1 - i - 0.5), 1, 1, facecolor='gray',
+                                     edgecolor='black')
                     self.map_patches.append(rect)
                     self.ax.add_patch(rect)
 
         # Draw goals
+        # Draw goals
         for i, goal in enumerate(self.goals):
-            goal_marker = Rectangle((goal[1] - 0.25, len(self.my_map) - 1 - goal[0] - 0.25), 0.5, 0.5,
-                                     facecolor=Colors[i % len(Colors)], edgecolor='black', alpha=0.5)
-            self.map_patches.append(goal_marker)
-            self.ax.add_patch(goal_marker)
+            if goal:  # Skip None goals
+                goal_marker = Rectangle((goal[1] - 0.25, len(self.my_map) - 1 - goal[0] - 0.25), 0.5, 0.5,
+                                        facecolor=Colors[i % len(Colors)], edgecolor='black', alpha=0.5)
+                self.map_patches.append(goal_marker)
+                self.ax.add_patch(goal_marker)
 
     def _init_animation(self):
         """Initialize the animation."""
@@ -86,16 +89,23 @@ class Animation:
         """Animate each frame."""
         timestep = int(t / 10)
 
+        # Ensure the animation continues for at least 10 timesteps after the last update
+        if timestep > self.total_timesteps:
+            return []  # Stop the animation after buffer period
+
         # Update the map if needed
         if timestep != self.current_timestep:
+            print(f"Updating map at timestep {timestep}")
             self._update_map(timestep)
             self.current_timestep = timestep
 
         # Update agent positions
         for i, path in enumerate(self.paths):
-            pos = self._get_interpolated_position(t / 10, path)
-            self.agent_patches[i].center = (pos[1], len(self.my_map) - 1 - pos[0])
-            self.agent_labels[i].set_position((pos[1], len(self.my_map) - 1 - pos[0] + 0.4))
+            if len(path) > 0:
+                pos = self._get_interpolated_position(t / 10, path)
+                self.agent_patches[i].center = (pos[1], len(self.my_map) - 1 - pos[0])  # Update circle position
+                self.agent_labels[i].set_position(
+                    (pos[1], len(self.my_map) - 1 - pos[0] + 0.4))  # Update label position
 
         # Reset agent colors
         for agent_id, agent_circle in self.agent_patches.items():
@@ -108,13 +118,18 @@ class Animation:
 
     def _update_map(self, timestep):
         """Update the map and goals for a new timestep."""
+        updated = False
         for state_timestep, my_map, starts, goals in self.dynamic_states:
             if state_timestep == timestep:
                 self.my_map = my_map
                 self.starts = starts
-                self.goals = goals
+                self.goals = goals  # No additional transformation here
                 self._draw_map()
+                print(f"Map and goals updated at timestep {timestep}.")
+                updated = True
                 break
+        if not updated:
+            print(f"No updates found for timestep {timestep}.")
 
     @staticmethod
     def _get_interpolated_position(t, path):
