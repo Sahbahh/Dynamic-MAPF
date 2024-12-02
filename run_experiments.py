@@ -1,6 +1,136 @@
 #!/usr/bin/python
 import argparse
 import glob
+import os
+from pathlib import Path
+from cbs import CBSSolver
+from independent import IndependentSolver
+from prioritized import PrioritizedPlanningSolver
+from visualize import Animation
+from single_agent_planner import get_sum_of_cost
+
+SOLVER = "CBS"
+
+def print_mapf_instance(my_map, starts, goals, links, time):
+    for idx,l in enumerate(my_map):
+        print('Time')
+        print(time[idx])
+        print('Start locations')
+        print_locations(my_map[idx], starts[idx])
+        print('Goal locations')
+        print_locations(my_map[idx], goals[idx])
+
+
+
+def print_locations(my_map, locations):
+    starts_map = [[-1 for _ in range(len(my_map[0]))] for _ in range(len(my_map))]
+    for i in range(len(locations)):
+        starts_map[locations[i][0]][locations[i][1]] = i
+    to_print = ''
+    for x in range(len(my_map)):
+        for y in range(len(my_map[0])):
+            if starts_map[x][y] >= 0:
+                to_print += str(starts_map[x][y]) + ' '
+            elif my_map[x][y]:
+                to_print += '@ '
+            else:
+                to_print += '. '
+        to_print += '\n'
+    print(to_print)
+
+
+def import_mapf_instance(f_names):
+    ret_maps = []
+    ret_starts = []
+    ret_goals = []
+    ret_time = []
+    for name in f_names:
+        print(name)
+        f = open(name, 'r')
+        # first line: #rows #columns
+        line = f.readline()
+        rows, columns = [int(x) for x in line.split(' ')]
+        rows = int(rows)
+        columns = int(columns)
+        # second line: inclusive #start_time #end_time of this map
+        line = f.readline()
+        start_time, end_time = [int(x) for x in line.split(' ')]
+        start_time  = int(start_time)
+        end_time = int(end_time)
+        ret_time.append([start_time, end_time])
+
+        # #rows lines with the map
+        my_map = []
+        for r in range(rows):
+            line = f.readline()
+            my_map.append([])
+            for cell in line:
+                if cell == '@':
+                    my_map[-1].append(True)
+                elif cell == '.':
+                    my_map[-1].append(False)
+        #ret_maps give 2d maps with time dimension
+        ret_maps.append(my_map)
+        #agents
+        line = f.readline()
+        num_agents = int(line)
+        # #agents lines with the start/goal positions
+        starts = []
+        goals = []
+        for a in range(num_agents):
+            line = f.readline()
+            sx, sy, gx, gy = [int(x) for x in line.split(' ')]
+            starts.append((sx, sy))
+            goals.append((gx, gy))
+        ret_starts.append(starts)
+        ret_goals.append(goals)
+        f.close()
+    return ret_maps, ret_starts, ret_goals, ret_time
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description='Runs various MAPF algorithms')
+    parser.add_argument('--instance', type=str, default=None,
+                        help='The name of the instance file(s)')
+    parser.add_argument('--batch', action='store_true', default=False,
+                        help='Use batch output instead of animation')
+    parser.add_argument('--disjoint', action='store_true', default=False,
+                        help='Use the disjoint splitting')
+    parser.add_argument('--solver', type=str, default=SOLVER,
+                        help='The solver to use (one of: {CBS,Independent,Prioritized}), defaults to ' + str(SOLVER))
+
+    args = parser.parse_args()
+
+
+    result_file = open("results.csv", "w", buffering=1)
+
+    for arg in sorted(glob.glob(args.instance)):
+
+        print("***Import an instance***")
+        filenames = os.listdir(arg)
+        all_links = []
+        for file in filenames:
+            rel_dir = os.path.relpath(arg, os.getcwd())
+            rel_file = os.path.join(rel_dir, file)
+            all_links.append(rel_file)
+
+        all_maps, all_starts, all_goals, all_time = import_mapf_instance(all_links)
+        print_mapf_instance(all_maps, all_starts, all_goals, all_links, all_time)
+        dynamic_env_objects = dict()
+        dynamic_env_objects[2] = [1,1]
+
+        if args.solver == "Prioritized":
+            print("***Run Prioritized***")
+            solver = PrioritizedPlanningSolver(all_maps[0], all_starts[0], all_goals[0])
+            paths = solver.find_solution()
+        else:
+            raise RuntimeError("Unknown solver!")
+        # if args.solver == "CBS":
+        #     print("***Run CBS***")
+        #     cbs = CBSSolver(my_map, starts, goals)
+        #     paths = cbs.find_solution(args.disjoint)#!/usr/bin/python
+import argparse
+import glob
 from pathlib import Path
 from cbs import CBSSolver
 from independent import IndependentSolver
@@ -44,7 +174,6 @@ def validate_positions(my_map, starts, goals):
             raise ValueError(f"Invalid position {pos} - it is blocked by an obstacle.")
 
 
-
 def import_dynamic_mapf_instance(filename):
     with open(filename, 'r') as f:
         dynamic_states = []  # List to store all map states
@@ -55,16 +184,25 @@ def import_dynamic_mapf_instance(filename):
         num_agents = 0  # Number of agents
 
         for line in f:
+            #print(f"Processing line: {line}")  # Debugging line
             line = line.strip()
+            #print(line)
 
             if not line:  # Skip empty lines
                 continue
 
             if line.startswith('@') or line.startswith('.'):  # Map rows
-                current_map.append([cell == '@' for cell in line])
+                current_map.append([])
+                for cell in line:
+                    if cell == '@':
+                        current_map[-1].append(True)
+                    elif cell == '.':
+                        current_map[-1].append(False)
+                #print(current_map)
 
             elif line.startswith('T ='):  # Timestep indicator
                 if timestep is not None:  # Save the previous state before processing a new timestep
+                    #print(f"Appending state at T={timestep}: starts={starts}, goals={current_goals}")
                     dynamic_states.append((timestep, current_map, starts, current_goals))
                 timestep = int(line.split('=')[1].strip())  # Update timestep
                 starts = [None] * num_agents
@@ -77,7 +215,6 @@ def import_dynamic_mapf_instance(filename):
                 current_goals = [None] * num_agents
 
             elif len(line.split()) == 4:  # Agent start/goal positions
-                print(f"Parsing agent position: {line}")  # Debugging line
                 if num_agents == 0:
                     raise ValueError("Number of agents must be specified before their start/goal positions.")
 
@@ -88,9 +225,12 @@ def import_dynamic_mapf_instance(filename):
 
         # Add the last state
         if timestep is not None and current_map and starts and current_goals:
+            #print(f"Appending final state at T={timestep}: starts={starts}, goals={current_goals}")
             dynamic_states.append((timestep, current_map, starts, current_goals))
 
+    #print(f"Parsed dynamic states: {dynamic_states}")
     return dynamic_states
+
 
 
 
@@ -113,17 +253,19 @@ if __name__ == '__main__':
     dynamic_states = import_dynamic_mapf_instance(args.instance)
 
     # Debugging: Print parsed dynamic states
+    print("Parsed dynamic states:")
     for state in dynamic_states:
         print(f"Timestep: {state[0]}")
         print("Map:")
         for row in state[1]:
-            print("".join('@' if cell else '.' for cell in row))
+            print(" ".join('@' if cell else '.' for cell in row))
         print(f"Starts: {state[2]}")
         print(f"Goals: {state[3]}")
         print()
 
     paths = None
     current_timestep = 0
+
 
     # Process each dynamic state
     for timestep, my_map, starts, goals in dynamic_states:
@@ -143,7 +285,7 @@ if __name__ == '__main__':
             paths = solver.find_solution(args.disjoint)
         elif args.solver == "Independent":
             print("***Run Independent***")
-            solver = IndependentSolver(my_map, starts, goals)
+            solver = IndependentSolver(my_map, starts, goals, dynamic_states)
             paths = solver.find_solution()
         elif args.solver == "Prioritized":
             print("***Run Prioritized***")
@@ -162,3 +304,25 @@ if __name__ == '__main__':
             animation = Animation(dynamic_states, paths)
             animation.show()
 
+        # elif args.solver == "Independent":
+        #     print("***Run Independent***")
+        #     solver = IndependentSolver(
+        #         my_map, starts, goals)
+        #     paths = solver.find_solution()
+        # elif args.solver == "Prioritized":
+        #     print("***Run Prioritized***")
+        #     solver = PrioritizedPlanningSolver(my_map, starts, goals)
+        #     paths = solver.find_solution()
+        # else:
+        #     raise RuntimeError("Unknown solver!")
+
+        cost = get_sum_of_cost(paths)
+        result_file.write("{},{}\n".format(arg, cost))
+        #
+        #
+        if not args.batch:
+            print("***Test paths on a simulation***")
+            animation = Animation(all_maps, all_starts, all_goals, paths, all_time, dynamic_env_objects)
+            # animation.save("output.mp4", 1.0)
+            animation.show()
+    result_file.close()
