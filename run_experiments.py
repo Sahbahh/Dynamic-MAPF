@@ -44,7 +44,6 @@ def validate_positions(my_map, starts, goals):
             raise ValueError(f"Invalid position {pos} - it is blocked by an obstacle.")
 
 
-
 def import_dynamic_mapf_instance(filename):
     with open(filename, 'r') as f:
         dynamic_states = []  # List to store all map states
@@ -55,6 +54,7 @@ def import_dynamic_mapf_instance(filename):
         num_agents = 0  # Number of agents
 
         for line in f:
+            print(f"Processing line: {line}")  # Debugging line
             line = line.strip()
 
             if not line:  # Skip empty lines
@@ -65,6 +65,7 @@ def import_dynamic_mapf_instance(filename):
 
             elif line.startswith('T ='):  # Timestep indicator
                 if timestep is not None:  # Save the previous state before processing a new timestep
+                    print(f"Appending state at T={timestep}: starts={starts}, goals={current_goals}")
                     dynamic_states.append((timestep, current_map, starts, current_goals))
                 timestep = int(line.split('=')[1].strip())  # Update timestep
                 starts = [None] * num_agents
@@ -77,7 +78,6 @@ def import_dynamic_mapf_instance(filename):
                 current_goals = [None] * num_agents
 
             elif len(line.split()) == 4:  # Agent start/goal positions
-                print(f"Parsing agent position: {line}")  # Debugging line
                 if num_agents == 0:
                     raise ValueError("Number of agents must be specified before their start/goal positions.")
 
@@ -88,9 +88,12 @@ def import_dynamic_mapf_instance(filename):
 
         # Add the last state
         if timestep is not None and current_map and starts and current_goals:
+            print(f"Appending final state at T={timestep}: starts={starts}, goals={current_goals}")
             dynamic_states.append((timestep, current_map, starts, current_goals))
 
+    print(f"Parsed dynamic states: {dynamic_states}")
     return dynamic_states
+
 
 
 
@@ -113,6 +116,7 @@ if __name__ == '__main__':
     dynamic_states = import_dynamic_mapf_instance(args.instance)
 
     # Debugging: Print parsed dynamic states
+    print("Parsed dynamic states:")
     for state in dynamic_states:
         print(f"Timestep: {state[0]}")
         print("Map:")
@@ -143,7 +147,7 @@ if __name__ == '__main__':
             paths = solver.find_solution(args.disjoint)
         elif args.solver == "Independent":
             print("***Run Independent***")
-            solver = IndependentSolver(my_map, starts, goals)
+            solver = IndependentSolver(my_map, starts, goals, dynamic_states)
             paths = solver.find_solution()
         elif args.solver == "Prioritized":
             print("***Run Prioritized***")
@@ -161,4 +165,3 @@ if __name__ == '__main__':
         if not args.batch:
             animation = Animation(dynamic_states, paths)
             animation.show()
-
