@@ -1,11 +1,14 @@
-def independent_solver(map_grid, agents, goals, dynamic_changes=None):
+from search_algorithms import search_algorithm
+
+def independent_solver(map_grid, agents, goals, algorithm="a_star", dynamic_changes=None):
     """
-    Moves agents toward their respective goals step-by-step, accounting for dynamic obstacles.
+    Moves agents toward their respective goals step-by-step using the specified algorithm, while ensuring constraints.
 
     Args:
         map_grid (list): 2D grid representing the map with obstacles (1 for obstacle, 0 for free space).
         agents (list): List of current agent positions [(row, col), ...].
         goals (list): List of goal positions [(row, col), ...].
+        algorithm (str): The search algorithm to use ("a_star", "cbs", etc.).
         dynamic_changes (dict): Optional dynamic changes, such as added obstacles.
 
     Returns:
@@ -17,44 +20,35 @@ def independent_solver(map_grid, agents, goals, dynamic_changes=None):
         r, c = position
         return 0 <= r < rows and 0 <= c < cols and grid[r][c] == 0
 
-    def heuristic(position, goal, prev_positions):
-        """Heuristic function to evaluate moves."""
-        distance = abs(position[0] - goal[0]) + abs(position[1] - goal[1])  # Manhattan distance
-        penalty = 1 if position in prev_positions else 0  # Penalize moves to recently visited positions
-        return distance + penalty
+    def relocate_to_nearest_neighbor(agent, grid):
+        """Find the first valid immediate neighbor to relocate to."""
+        r, c = agent
+        potential_moves = [
+            (r - 1, c),  # Up
+            (r + 1, c),  # Down
+            (r, c - 1),  # Left
+            (r, c + 1)   # Right
+        ]
+        for move in potential_moves:
+            if is_valid_move(move, grid):
+                return move
+        return agent  # Stay in place if no valid moves exist
 
     updated_positions = []
-    prev_positions = set()  # Track recently visited positions for all agents
 
-    # Extract newly added obstacles, if any
+    # Handle dynamic changes
     new_obstacles = set(tuple(obstacle) for obstacle in dynamic_changes.get("add_obstacles", [])) if dynamic_changes else set()
 
     for i, (agent, goal) in enumerate(zip(agents, goals)):
         print(f"Agent {i + 1}: Current Position: {agent}, Goal: {goal}")
 
-        # If the agent is on a newly added obstacle, move it to the first valid spot
+        # Check if the agent is on a new obstacle
         if agent in new_obstacles:
-            print(f"Agent {i + 1} is on a new obstacle at {agent}! Relocating...")
-            r, c = agent
-            potential_moves = [
-                (r - 1, c),  # Move up
-                (r + 1, c),  # Move down
-                (r, c - 1),  # Move left
-                (r, c + 1)   # Move right
-            ]
-            valid_moves = [move for move in potential_moves if is_valid_move(move, map_grid)]
-
-            if valid_moves:
-                # Move agent to the first valid cell
-                first_valid_move = valid_moves[0]
-                print(f"Agent {i + 1} moved to avoid obstacle: {first_valid_move}")
-                updated_positions.append(first_valid_move)
-                prev_positions.add(agent)  # Update previous positions
-                continue
-            else:
-                print(f"Agent {i + 1} has no valid moves. Staying in place.")
-                updated_positions.append(agent)
-                continue
+            print(f"Agent {i + 1} is on a new obstacle at {agent}. Relocating...")
+            new_position = relocate_to_nearest_neighbor(agent, map_grid)
+            print(f"Agent {i + 1} relocated to {new_position}")
+            updated_positions.append(new_position)
+            continue
 
         # If the agent is already at its goal, no further action is required
         if agent == goal:
@@ -62,29 +56,16 @@ def independent_solver(map_grid, agents, goals, dynamic_changes=None):
             updated_positions.append(agent)
             continue
 
-        # Calculate potential moves
-        r, c = agent
-        potential_moves = [
-            (r - 1, c),  # Move up
-            (r + 1, c),  # Move down
-            (r, c - 1),  # Move left
-            (r, c + 1)   # Move right
-        ]
+        # Call the appropriate search algorithm to get the next move
+        next_move = search_algorithm(algorithm, agent, goal, map_grid, {})
+        print(f"Agent {i + 1}: Next Move from Algorithm: {next_move}")
 
-        # Filter valid moves
-        valid_moves = [move for move in potential_moves if is_valid_move(move, map_grid)]
-
-        print(f"Agent {i + 1}: Valid Moves: {valid_moves}")
-
-        if valid_moves:
-            # Select the best move based on the heuristic
-            best_move = min(valid_moves, key=lambda move: heuristic(move, goal, prev_positions))
-            print(f"Agent {i + 1}: Selected Move: {best_move}")
-            updated_positions.append(best_move)
-            prev_positions.add(agent)  # Update previous positions
+        # Validate the returned move
+        if next_move and is_valid_move(next_move, map_grid):
+            print(f"Agent {i + 1}: Selected Move: {next_move}")
+            updated_positions.append(next_move)
         else:
-            # No valid moves; stay in place
-            print(f"Agent {i + 1}: No valid moves. Staying in place.")
+            print(f"Agent {i + 1}: No valid move. Staying in place.")
             updated_positions.append(agent)
 
     return updated_positions

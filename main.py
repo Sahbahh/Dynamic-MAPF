@@ -1,5 +1,3 @@
-# main.py
-
 from dynamic_map import DynamicMap
 from input_parser import parse_input
 from independent import independent_solver
@@ -12,6 +10,7 @@ def main():
     import argparse
     parser = argparse.ArgumentParser(description="Dynamic Multi-Agent Path Finding (MAPF) Simulation")
     parser.add_argument("input_file", type=str, help="Path to the input JSON file")
+    parser.add_argument("--algorithm", type=str, default="a_star", help="Pathfinding algorithm to use (e.g., a_star, cbs)")
 
     # Parse arguments
     args = parser.parse_args()
@@ -67,8 +66,8 @@ def main():
         else:
             changes = {}
 
-        # Update agent positions using the independent solver
-        agents = independent_solver(map_grid.map_grid, agents, agent_goals, dynamic_changes=changes)
+        # Update agent positions using the independent solver with the selected algorithm
+        agents = independent_solver(map_grid.map_grid, agents, agent_goals, algorithm=args.algorithm, dynamic_changes=changes)
 
         # Update the agent positions and visualize the current state
         map_grid.agents = agents  # Set current agents in the map object

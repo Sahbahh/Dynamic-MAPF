@@ -1,0 +1,5 @@
+# Dynamic-MAPF
+
+python3 run_experiments.py --instance instances/exp0.txt --solver Independent
+
+python main.py d_map4.json --algorithm a_star
