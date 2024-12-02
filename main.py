@@ -22,12 +22,10 @@ def main():
         input_data = json.load(f)
 
     # Validate the map
-    # Checks if the
     print("Validating the map...")
     if not validate_map(input_data):
         print("Map validation failed. Exiting.")
         return
-
 
     # Parse the input
     map_dimensions, agents_data, input_data = parse_input(input_file)
@@ -60,6 +58,18 @@ def main():
             print(f"Applying changes at timestep {step}: {changes}")
             map_grid.apply_changes(changes)
 
+            # Handle change_goals dynamically
+            if "change_goals" in changes:
+                for idx, new_goal in enumerate(changes["change_goals"]):
+                    if idx < len(agent_goals):  # Ensure the index is valid
+                        print(f"Agent {idx + 1} goal changed from {agent_goals[idx]} to {new_goal}")
+                        agent_goals[idx] = tuple(new_goal)
+        else:
+            changes = {}
+
+        # Update agent positions using the independent solver
+        agents = independent_solver(map_grid.map_grid, agents, agent_goals, dynamic_changes=changes)
+
         # Update the agent positions and visualize the current state
         map_grid.agents = agents  # Set current agents in the map object
         map_grid.agent_goals = agent_goals  # Set current goals
@@ -70,14 +80,11 @@ def main():
             print(f"All agents reached their goals in {step} steps.")
             break
 
-        # Update agent positions using the independent solver
-        agents = independent_solver(map_grid.map_grid, agents, agent_goals)
     else:
         print("Agents could not reach their goals within the step limit.")
 
     # Keep the final visualization open
     plt.show()
-
 
 if __name__ == "__main__":
     main()

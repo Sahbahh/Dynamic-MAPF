@@ -1,17 +1,14 @@
-# dynamic_map.py
-
 import matplotlib.pyplot as plt
 import numpy as np
 import random
 from matplotlib.colors import ListedColormap
-
 
 class DynamicMap:
     """
     Manages a dynamic map for MAPF
 
     The dynamic map includes obstacles, agents, and their goals, with the ability to update and visualize the map dynamically
-    as changes occur 
+    as changes occur
 
     Attributes:
         rows (int): Number of rows in the map grid.
@@ -20,6 +17,7 @@ class DynamicMap:
         agent_goals (list): List of current goal positions for all agents.
         agents (list): List of current positions for all agents.
         agent_colors (list): Colors assigned to agents for visualization purposes.
+        paths (list): Tracks each agent's path for visualization.
         fig, ax (matplotlib objects): Used to display and update the map dynamically.
     """
 
@@ -37,8 +35,8 @@ class DynamicMap:
         self.agent_goals = []
         self.agents = []
         self.agent_colors = []
+        self.paths = []  # Store each agent's path
         self.fig, self.ax = None, None
-
 
     def assign_agent_colors(self, num_agents):
         """
@@ -51,7 +49,7 @@ class DynamicMap:
             (random.random(), random.random(), random.random())
             for _ in range(num_agents)
         ]
-
+        self.paths = [[] for _ in range(num_agents)]  # Initialize empty paths for all agents
 
     def initialize_animation(self):
         """
@@ -59,7 +57,6 @@ class DynamicMap:
         """
         self.fig, self.ax = plt.subplots(figsize=(8, 8))
         self.ax.set_title("Dynamic Map Animation")
-
 
     def apply_changes(self, changes):
         """
@@ -78,24 +75,6 @@ class DynamicMap:
         for pos in changes.get("remove_obstacles", []):
             self.map_grid[pos[0]][pos[1]] = 0  # Set cell as free
         return self.map_grid
-
-
-    def update_goals(self, agent_goals, changes):
-        """
-        Update the goals of agents dynamically.
-
-        Args:
-            agent_goals (list): Current goal positions of agents.
-            changes (dict): A dictionary containing updated goal positions.
-
-        Returns:
-            list: Updated agent goal positions.
-        """
-        for idx, new_goal in enumerate(changes.get("change_goals", [])):
-            if idx < len(agent_goals):
-                agent_goals[idx] = new_goal
-        return agent_goals
-
 
     def update_visualization(self):
         """
@@ -123,6 +102,15 @@ class DynamicMap:
 
         # Plot agents (colored circles) and goals (colored stars)
         for i, agent in enumerate(self.agents):
+            # Update the path
+            self.paths[i].append(agent)
+
+            # Plot the trail (path)
+            path_x = [pos[1] for pos in self.paths[i]]
+            path_y = [pos[0] for pos in self.paths[i]]
+            self.ax.plot(path_x, path_y, color=self.agent_colors[i], linestyle="-", linewidth=2, zorder=1)
+
+            # Plot the agent
             self.ax.scatter(agent[1], agent[0], c=[self.agent_colors[i]], s=200, label=f"Agent {i + 1}", zorder=3)
 
         for i, goal in enumerate(self.agent_goals):
