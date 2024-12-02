@@ -54,18 +54,23 @@ def import_dynamic_mapf_instance(filename):
         num_agents = 0  # Number of agents
 
         for line in f:
-            print(f"Processing line: {line}")  # Debugging line
+            #print(f"Processing line: {line}")  # Debugging line
             line = line.strip()
 
             if not line:  # Skip empty lines
                 continue
 
             if line.startswith('@') or line.startswith('.'):  # Map rows
-                current_map.append([cell == '@' for cell in line])
+                current_map.append([])
+                for cell in line:
+                    if cell == '@':
+                        my_map[-1].append(True)
+                    elif cell == '.':
+                        my_map[-1].append(False)
 
             elif line.startswith('T ='):  # Timestep indicator
                 if timestep is not None:  # Save the previous state before processing a new timestep
-                    print(f"Appending state at T={timestep}: starts={starts}, goals={current_goals}")
+                    #print(f"Appending state at T={timestep}: starts={starts}, goals={current_goals}")
                     dynamic_states.append((timestep, current_map, starts, current_goals))
                 timestep = int(line.split('=')[1].strip())  # Update timestep
                 starts = [None] * num_agents
@@ -88,10 +93,10 @@ def import_dynamic_mapf_instance(filename):
 
         # Add the last state
         if timestep is not None and current_map and starts and current_goals:
-            print(f"Appending final state at T={timestep}: starts={starts}, goals={current_goals}")
+            #print(f"Appending final state at T={timestep}: starts={starts}, goals={current_goals}")
             dynamic_states.append((timestep, current_map, starts, current_goals))
 
-    print(f"Parsed dynamic states: {dynamic_states}")
+    #print(f"Parsed dynamic states: {dynamic_states}")
     return dynamic_states
 
 
