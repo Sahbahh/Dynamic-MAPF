@@ -1,0 +1,14 @@
+{
+    "map_dimensions": [5, 5],
+    "agents": [
+        {"start": [0, 0], "goal": [0, 1]}
+    ],
+    "timesteps": {
+        "1": {
+            "change_goals": [[0,2]]
+        },
+        "2": {
+            "change_goals": [[0,3]]
+        }
+    }
+}
