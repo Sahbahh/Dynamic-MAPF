@@ -1,12 +1,14 @@
-from dynamic_map import DynamicMap
 from input_parser import parse_input
-from independent import independent_solver, initialize_single_agent_planner_map, replan, \
-    compile_obstacle_dict
+from helper_functions import initialize_single_agent_planner_map, replan, \
+    compile_obstacle_dict, compile_goals_dict, update_constraints
 from map_validator import validate_map  # Import the validator
-import matplotlib.pyplot as plt
-import json
-from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
+from single_agent_planner import compute_heuristics
 from prioritized import PrioritizedPlanningSolver
+from dynamic_map_visualizer import Animation
+from functools import reduce
+import json
+import copy
+
 
 def main():
     # Set up argument parser
@@ -36,22 +38,14 @@ def main():
     rows, cols = map_dimensions
 
     # Extract agent starts and goals
-    agents = [tuple(agent["start"]) for agent in agents_data]
+    agent_starts = [tuple(agent["start"]) for agent in agents_data]
     agent_goals = [tuple(agent["goal"]) for agent in agents_data]
-
-    # Create the map
-    map_grid = DynamicMap(rows, cols)
-
-    # Assign random colors to agents
-    map_grid.assign_agent_colors(len(agents))
-
-    # Initialize the visualization
-    map_grid.initialize_animation()
+    map_grid = [[0 for _ in range(cols)] for _ in range(rows)]  # 0: Free, 1: Obstacle
 
     ##############################
 
-    number_agents = len(agents)
-    single_agent_planner_map = initialize_single_agent_planner_map(map_grid.map_grid)
+    number_agents = len(agent_starts)
+    single_agent_planner_map = initialize_single_agent_planner_map(map_grid)
 
     heuristics = []
     for goal in agent_goals:
@@ -63,11 +57,12 @@ def main():
     """
     Agent paths are planned independent regardless of obstacles or collisions.
     """
-    print("starts: ", agents)
+    print("starts: ", agent_starts)
     print("goals: ", agent_goals)
 
-    constraints = []
-    result = replan(number_agents, single_agent_planner_map, agents, agent_goals, heuristics, constraints)
+    agent_constraints = []
+    print("INDEPENDENT AGENT")
+    result = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics, agent_constraints)
 
     #############################################################
 
@@ -76,18 +71,14 @@ def main():
     With this feature, agents will avoid obstacles with added restraints. Agent collision can still happen.
     """
 
-    # time step of obstacles
-    obstacle_timesteps = sorted(map(int, input_data.keys()))  # Ensure timesteps are processed in order
+    # time steps of all input data
+    input_data_timesteps = sorted(map(int, input_data.keys()))  # Ensure timesteps are processed in order
 
 
-    max_steps = 10  # Maximum allowed steps to prevent infinite loops
+    max_steps = 100  # Maximum allowed steps to prevent infinite loops
 
     directions = [(0, -1), (1, 0), (0, 1), (-1, 0)]
-    obstacle_dictionary = compile_obstacle_dict(input_data, obstacle_timesteps, rows, cols, max_steps)
-
-
-    for timestep, obstacle_list in obstacle_dictionary.items():
-        print("timestep: ", timestep, "obstacles: ", obstacle_list)
+    obstacle_dictionary = compile_obstacle_dict(input_data, input_data_timesteps, rows, cols, max_steps)
 
     for timestep, obstacle_list in obstacle_dictionary.items():
         for obstacle in obstacle_list:
@@ -96,7 +87,7 @@ def main():
             for _ in range(obstacle['appearance_timestep']):
                 for agent in range(number_agents):
                     #vertex constraints
-                    constraints.append({'agent': agent, 'loc': obstacle_location,
+                    agent_constraints.append({'agent': agent, 'loc': obstacle_location,
                                         'timestep': current_time, 'type': 'vertex'})
 
                     #edge constraints
@@ -107,13 +98,14 @@ def main():
                             continue
                         start_pos.append(pos)
                     for pos in start_pos:
-                        constraints.append({'agent': agent, 'loc': [pos,obstacle_location],
+                        agent_constraints.append({'agent': agent, 'loc': [pos,obstacle_location],
                                             'timestep': current_time,'type': 'edge'})
 
                 current_time += 1
 
     # Replan all agent paths using added constraints with a star.
-    result = replan(number_agents, single_agent_planner_map, agents, agent_goals, heuristics, constraints)
+    print("RESULT PATH WITH OBSTACLE CONSTRAINTS")
+    result = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics, agent_constraints)
 
     #############################################################
 
@@ -130,59 +122,68 @@ def main():
     6. Weighted Dependency Graph (WDG)
     
     """
+
+    goal_dictionary = compile_goals_dict(input_data, input_data_timesteps)
+
+    # Initialize solution with initial goals
     if args.algorithm == "Prioritized":
-        print("***Run Prioritized***")
-        solver = PrioritizedPlanningSolver(single_agent_planner_map, agents, agent_goals, constraints)
-        result = solver.find_solution()
+            print("***Run Prioritized***")
+            solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
+            result = solver.find_solution()
+    elif args.algorithm == "CBS":
+            print("***Run CBS***")
+
+    # Adapt to changing goals
+    starts = copy.deepcopy(agent_starts)
+    goals = copy.deepcopy(agent_goals)
+    constraints = copy.deepcopy(agent_constraints)
+    new_result = copy.deepcopy(result)
+    temp = []
+
+    for goal_timestep, goal_list in goal_dictionary.items():
+        # extend all paths to longest path for appending new paths to new goals
+
+        print("GET MAX")
+        max_path = len(reduce(lambda x, y: x if len(x) > len(y) else y, new_result))
+        for i, p in enumerate(new_result):
+            p_len = max_path - len(p)
+            if p_len > 0:
+                last_pos = new_result[i][-1]
+                for j in range(p_len):
+                    new_result[i].append(last_pos)
+
+        # change start/goals/constraints to match new timestep
+        # goal timestep is 1-index so change to 0-index
+        update_constraints(goal_timestep - 1, new_result, goal_list, starts, goals, constraints)
+
+        # add more search algorithms here
+        if args.algorithm == "Prioritized":
+            print("***Run Prioritized***")
+            solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
+            temp = solver.find_solution()
+            print("NEW RESULT")
+            for p in temp:
+                print(p)
+        elif args.algorithm == "CBS":
+            print("***Run CBS***")
+
+        for i, _ in enumerate(result):
+            new_result[i] = new_result[i][:goal_timestep - 1] + temp[i]
+
+    print("FINAL RESULT")
+    for p in result:
+        print(p)
+
 
     #############################################################
 
     ################ VISUALIZE AGENT PATHS ######################
 
-    # Simulate movement step-by-step
-    for step in range(max_steps):
-        print(f"Step {step}")
+    print("AGENT GOALS")
+    print(agent_goals)
 
-        # Apply changes for the current timestep
-        if str(step) in input_data:  # Check if there are changes for this timestep
-            changes = input_data[str(step)]
-            print(f"Applying changes at timestep {step}: {changes}")
-            map_grid.apply_changes(changes)
-
-            # Handle change_goals dynamically
-            if "change_goals" in changes:
-                for idx, new_goal in enumerate(changes["change_goals"]):
-                    if idx < len(agent_goals):  # Ensure the index is valid
-                        print(f"Agent {idx + 1} goal changed from {agent_goals[idx]} to {new_goal}")
-                        agent_goals[idx] = tuple(new_goal)
-        else:
-            changes = {}
-
-        # Update agent positions using the independent solver with the selected algorithm
-        # agents = independent_solver(map_grid.map_grid, agents, agent_goals, algorithm=args.algorithm, dynamic_changes=changes)
-
-        agents = []
-        for path in result:
-            if step < len(path):
-                agents.append(path[step])
-            else:
-                agents.append(path[-1])
-
-        # Update the agent positions and visualize the current state
-        map_grid.agents = agents  # Set current agents in the map object
-        map_grid.agent_goals = agent_goals  # Set current goals
-        map_grid.update_visualization()
-
-        # Check if all agents have reached their goals
-        if all(agent == goal for agent, goal in zip(agents, agent_goals)):
-            print(f"All agents reached their goals in {step} steps.")
-            break
-
-    else:
-        print("Agents could not reach their goals within the step limit.")
-
-    # Keep the final visualization open
-    plt.show()
-
+    animation = Animation(single_agent_planner_map, agent_starts, agent_goals, new_result,
+                          obstacle_dictionary, goal_dictionary)
+    animation.show()
 if __name__ == "__main__":
     main()
