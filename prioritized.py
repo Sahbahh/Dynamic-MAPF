@@ -68,10 +68,8 @@ class PrioritizedPlanningSolver(object):
             ##############################
 
         self.CPU_time = timer.time() - start_time
-        # for constraint in constraints:
-        #     print(constraint)
-        print("\n Found a solution! \n")
-        print("CPU time (s):    {:.2f}".format(self.CPU_time))
-        print("Sum of costs:    {}".format(get_sum_of_cost(result)))
-        print(result)
+        # print("\n Found a solution! \n")
+        # print("CPU time (s):    {:.2f}".format(self.CPU_time))
+        # print("Sum of costs:    {}".format(get_sum_of_cost(result)))
+        # print(result)
         return result

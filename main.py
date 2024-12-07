@@ -9,8 +9,33 @@ from functools import reduce
 import json
 import copy
 
+"""
+DYNAMIC MAPPING FOR MAPF ALGORITHMS
+STEPS:
+1. Planning all agent paths with a star
+2. Planning all agent paths with a star + obstacle constraints
+3. Adapt to changing goals with chosen MAPF algorithm
+
+- UI can be paused with a button click
+
+"""
 
 def main():
+    """
+            DYNAMIC MAPPING FOR MAPF ALGORITHMS
+        STEPS:
+        1. Planning all agent paths with a star
+        2. Planning all agent paths with a star + obstacle constraints
+        3. Adapt to changing goals with chosen MAPF algorithm
+            - Space-Time A*
+            - Prioritized
+            - CBS
+            - CBS with disjoint splitting
+            - Large Neighborhood Search (LNS)
+
+        -> UI animation can be paused with a button click
+    """
+
     # Set up argument parser
     import argparse
     parser = argparse.ArgumentParser(description="Dynamic Multi-Agent Path Finding (MAPF) Simulation")
@@ -52,23 +77,28 @@ def main():
         heuristics.append(compute_heuristics(single_agent_planner_map, goal))
 
 
-    ###############################
-    ## INDEPENDENT AGENT PLANNER ##
+    ##########################################
+    ## SECTION 1: INDEPENDENT AGENT PLANNER ##
     """
-    Agent paths are planned independent regardless of obstacles or collisions.
+    Agent paths are planned independently with a-star search regardless of obstacles or collisions.
     """
     print("starts: ", agent_starts)
     print("goals: ", agent_goals)
 
     agent_constraints = []
-    print("INDEPENDENT AGENT")
-    result = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics, agent_constraints)
+    print("RESULT PATH WITH INDEPENDENT PLANNING")
+    a_star_paths = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics,
+                       agent_constraints)
 
-    #############################################################
+    for i,p in enumerate(a_star_paths):
+        print(i,p)
 
-    #### OBSTACLES DETECTION AND AVOIDANCE USING CONSTRAINTS ####
+    ########################################################################
+
+    #### SECTION 2: OBSTACLES DETECTION AND AVOIDANCE USING CONSTRAINTS ####
     """
     With this feature, agents will avoid obstacles with added restraints. Agent collision can still happen.
+    This feature applies to all MAPF algorithms.
     """
 
     # time steps of all input data
@@ -77,13 +107,17 @@ def main():
 
     max_steps = 100  # Maximum allowed steps to prevent infinite loops
 
+    # for edge constraints
     directions = [(0, -1), (1, 0), (0, 1), (-1, 0)]
+
+    # record all obstacles creation and how many time steps they last
     obstacle_dictionary = compile_obstacle_dict(input_data, input_data_timesteps, rows, cols, max_steps)
 
     for timestep, obstacle_list in obstacle_dictionary.items():
         for obstacle in obstacle_list:
             obstacle_location = obstacle['loc']
             current_time = timestep
+            # appearance time step is how long an obstacle will stay there for
             for _ in range(obstacle['appearance_timestep']):
                 for agent in range(number_agents):
                     #vertex constraints
@@ -103,86 +137,106 @@ def main():
 
                 current_time += 1
 
-    # Replan all agent paths using added constraints with a star.
+    # Replan all agent paths using added constraints with a star search.
     print("RESULT PATH WITH OBSTACLE CONSTRAINTS")
-    result = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics, agent_constraints)
+    obstacle_free_paths = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics,
+                       agent_constraints)
 
-    #############################################################
+    for i,p in enumerate(obstacle_free_paths):
+        print(i,p)
 
-    ######### AGENT COLLISION DETECTION AND AVOIDANCE ###########
+    ########################################################################
+
+    ######### SECTION 3: AGENT COLLISION DETECTION AND AVOIDANCE ###########
     """
-        Implement replanning of agent paths to avoid agent collision 
-        using our chosen path planning algorithms here:
-        
-    1. Prioritized
-    2. CBS
-    3. CBS with disjoint splitting
-    4. Large Neighborhood Search (LNS)
-    5. Increased Cost Tree Search (ICTS)
-    6. Weighted Dependency Graph (WDG)
+            Implement replanning of agent paths to avoid agent collision
+            using our chosen path planning algorithms here:
     
+        1. Space-Time A* 
+        2. Prioritized
+        3. CBS
+        4. CBS with disjoint splitting
+        5. Large Neighborhood Search (LNS)
+
     """
 
     goal_dictionary = compile_goals_dict(input_data, input_data_timesteps)
+    result = []
 
     # Initialize solution with initial goals
-    if args.algorithm == "Prioritized":
-            print("***Run Prioritized***")
-            solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
-            result = solver.find_solution()
+    # REMEMBER TO INITIALIZE YOUR AGENT PATHS
+    # 1. Create your own algorithm class (eg. prioritized.py)
+    # 2. If your algorithm lower level search is a-star, then you can call single_agent_planner.py with your
+    # algorithm class. e.g. prioritized.py calls single_agent_planner.py.
+    if args.algorithm == "Space Time A*":
+        print("***Initialize Space Time A****")
+    elif args.algorithm == "Prioritized":
+        print("***Initialize Prioritized***")
+        solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
+        result = solver.find_solution()
     elif args.algorithm == "CBS":
-            print("***Run CBS***")
+        print("***Initialize CBS***")
+
+    elif args.algorithm == "CBS Disjoint":
+        print("***Initialize CBS with disjoint splitting***")
+
+    elif args.algorithm == "LNS":
+        print("***Initialize Large Neighborhood Search***")
 
     # Adapt to changing goals
     starts = copy.deepcopy(agent_starts)
     goals = copy.deepcopy(agent_goals)
     constraints = copy.deepcopy(agent_constraints)
-    new_result = copy.deepcopy(result)
-    temp = []
+    new_result = []
 
     for goal_timestep, goal_list in goal_dictionary.items():
-        # extend all paths to longest path for appending new paths to new goals
 
-        print("GET MAX")
-        max_path = len(reduce(lambda x, y: x if len(x) > len(y) else y, new_result))
-        for i, p in enumerate(new_result):
+        # extend all paths to the longest path
+        max_path = len(reduce(lambda x, y: x if len(x) > len(y) else y, result))
+        for i, p in enumerate(result):
             p_len = max_path - len(p)
             if p_len > 0:
-                last_pos = new_result[i][-1]
+                last_pos = result[i][-1]
                 for j in range(p_len):
-                    new_result[i].append(last_pos)
+                    result[i].append(last_pos)
 
         # change start/goals/constraints to match new timestep
         # goal timestep is 1-index so change to 0-index
-        update_constraints(goal_timestep - 1, new_result, goal_list, starts, goals, constraints)
+        # update constraints is in helper functions
+        update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
 
-        # add more search algorithms here
-        if args.algorithm == "Prioritized":
-            print("***Run Prioritized***")
+        # ADD MORE SEARCH ALGORITHMS HERE
+        if args.algorithm == "Space Time A*":
+            print("***Run Space Time A with changing goals****")
+
+        elif args.algorithm == "Prioritized":
+            print("***Run Prioritized with changing goals***")
             solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
-            temp = solver.find_solution()
-            print("NEW RESULT")
-            for p in temp:
-                print(p)
+            new_result = solver.find_solution()
         elif args.algorithm == "CBS":
-            print("***Run CBS***")
+            print("***Run CBS with changing goals***")
 
+        elif args.algorithm == "CBS Disjoint":
+            print("***Run CBS with disjoint splitting and changing goals***")
+
+        elif args.algorithm == "LNS":
+            print("***Run Large Neighborhood Search with changing goals***")
+
+        # update resulting path by slicing
+        # new path: old path from timestep 0 to new goal timestep + new path
         for i, _ in enumerate(result):
-            new_result[i] = new_result[i][:goal_timestep - 1] + temp[i]
+            result[i] = result[i][:goal_timestep - 1] + new_result[i]
 
-    print("FINAL RESULT")
-    for p in result:
-        print(p)
-
+    print("DYNAMIC OBSTACLES + DYNAMIC GOALS + COLLISION DETECTION AGENT PATHS")
+    for i, p in enumerate(result):
+        print(i, p)
 
     #############################################################
 
     ################ VISUALIZE AGENT PATHS ######################
 
-    print("AGENT GOALS")
-    print(agent_goals)
-
-    animation = Animation(single_agent_planner_map, agent_starts, agent_goals, new_result,
+    # Animation class is in dynamic_map_visualizer.py
+    animation = Animation(single_agent_planner_map, agent_starts, agent_goals, result,
                           obstacle_dictionary, goal_dictionary)
     animation.show()
 if __name__ == "__main__":

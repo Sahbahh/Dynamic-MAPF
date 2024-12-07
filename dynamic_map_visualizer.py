@@ -8,17 +8,16 @@ import numpy as np
 from matplotlib import animation
 
 
-"""
-References:
-This document is from individual assignment.
-Toggle pause function: https://matplotlib.org/stable/gallery/animation/pause_resume.html
-
-Click on graph to pause/resume animation
-
-"""
-
 
 class Animation:
+    """
+    References:
+    This document is from individual assignment.
+    Toggle pause function: https://matplotlib.org/stable/gallery/animation/pause_resume.html
+
+    Click on graph to pause/resume animation
+
+    """
     def __init__(self, my_map, starts, goals, paths, obstacles, goals_dictionary):
         self.my_map = my_map
         self.starts = []
@@ -63,12 +62,11 @@ class Animation:
         self.grid = np.array(my_map)
         self.ax.imshow(self.grid, cmap=cmap, origin="upper", interpolation="none")
 
-        print("ANIMATION")
-
         # update appearance timestep to be end time, to use as trigger to set obstacle rectangle to invisible
-        for k, obs_list in self.obstacles_dict.items():
-            for ob in obs_list:
-                ob['appearance_timestep'] = k + ob['appearance_timestep']
+        if self.obstacles_dict:
+            for k, obs_list in self.obstacles_dict.items():
+                for ob in obs_list:
+                    ob['appearance_timestep'] = k + ob['appearance_timestep']
 
         # Assign random colors to agents
         self.assign_agent_colors(len(goals))
@@ -96,26 +94,27 @@ class Animation:
             self.artists.append(self.agent_names[i])
 
         # draw obstacles
-        for timestep, obstacle_list in self.obstacles_dict.items():
-            # print(timestep, obstacle_list)
-            for obstacle in obstacle_list:
-                obs_loc = obstacle['loc']
-                end_time = obstacle['appearance_timestep']
-                new_rect = Rectangle((obs_loc[1] - 0.5,
-                                          obs_loc[0] - 0.5), 1, 1, facecolor='black',
-                                          edgecolor='black', alpha=0.5, visible=False)
-                # objects to be created
-                if timestep not in self.create_obstacles:
-                    self.create_obstacles[timestep] = []
-                self.create_obstacles[timestep].append(new_rect)
+        if self.obstacles_dict:
+            for timestep, obstacle_list in self.obstacles_dict.items():
+                # print(timestep, obstacle_list)
+                for obstacle in obstacle_list:
+                    obs_loc = obstacle['loc']
+                    end_time = obstacle['appearance_timestep']
+                    new_rect = Rectangle((obs_loc[1] - 0.5,
+                                              obs_loc[0] - 0.5), 1, 1, facecolor='black',
+                                              edgecolor='black', alpha=0.5, visible=False)
+                    # objects to be created
+                    if timestep not in self.create_obstacles:
+                        self.create_obstacles[timestep] = []
+                    self.create_obstacles[timestep].append(new_rect)
 
-                # objects to be deleted
-                if end_time not in self.delete_obstacles:
-                    self.delete_obstacles[end_time] = []
-                self.delete_obstacles[end_time].append(new_rect)
+                    # objects to be deleted
+                    if end_time not in self.delete_obstacles:
+                        self.delete_obstacles[end_time] = []
+                    self.delete_obstacles[end_time].append(new_rect)
 
-                # add rectangle to patches to render
-                self.patches.append(new_rect)
+                    # add rectangle to patches to render
+                    self.patches.append(new_rect)
 
         self.animation = animation.FuncAnimation(self.fig, self.animate_func,
                                                  init_func=self.init_func,

@@ -1,25 +1,22 @@
 from single_agent_planner import a_star
 
-"""
-Obstacle dictionary:
- - key, value = timestep, obstacle information: {appearance_timestep, obstacle_location}
- - Appearance timestep is how many timesteps this obstacle will appear for. By precalculating this
-   we can add constraints to agents in specific timesteps to avoid said obstacle.
- 
- compile_obstacle_dict function:
- 
- Inputs:
- - JSON obstacle data
- - timesteps in which obstacles appear
- - number of rows of map
- - number of cols of map
- - max_steps (used to set appearance time of obstacle in case obstacle stay indefinitely without a remove)
-
- Outputs:
- - dictionary of obstacles: used for adding constraints to agents to make agents avoid obstacles
- 
-"""
 def compile_obstacle_dict(input_data, input_timesteps, rows, cols, max_steps):
+    """
+        Obstacle dictionary:
+         - key, value = timestep, obstacle information: {appearance_timestep, obstacle_location}
+         - Appearance timestep is how many timesteps this obstacle will appear for. By precalculating this
+           we can add constraints to agents in specific timesteps to avoid said obstacle.
+
+        Args:
+            input_data (JSON): Algorithm name (e.g., "a_star", "cbs").
+            input_timesteps (map): Timesteps in which obstacles appear
+            rows (int): number of rows of map
+            cols (int): number of cols of map
+            max_steps (int): maximum number of time steps for a search algorithm
+
+        Returns:
+            dict: Dictionary of obstacles sorted by time steps
+    """
     result = dict()
     memo = [[0 for _ in range(cols)] for _ in range(rows)]
     max_obstacle_time = max(input_timesteps)
@@ -59,6 +56,17 @@ def compile_obstacle_dict(input_data, input_timesteps, rows, cols, max_steps):
     return result
 
 def compile_goals_dict(input_data, input_timesteps):
+    """
+            Goals dictionary:
+             - key, value = timestep, list of goals
+
+            Args:
+                input_data (JSON): Algorithm name (e.g., "a_star", "cbs").
+                input_timesteps (map): Timesteps in which goals appear
+
+            Returns:
+                dict: Dictionary of goals sorted by time steps
+    """
     result = dict()
 
     for goal_time in input_timesteps:
@@ -74,8 +82,17 @@ def compile_goals_dict(input_data, input_timesteps):
     return result
 
 def update_constraints(goal_timestep, paths, goal_list, starts, goals, constraints):
-    print("UPDATE CONSTRAINTS")
-    print("GOAL TIMESTEP: ",goal_timestep)
+    """
+            Args:
+                goal_timestep (int): timestep of the changing goal
+                paths (list): List of all agent paths (to get position of agent at goal_timestep)
+                goal_list (list): List of changing goals at goal_timestep
+                starts (list): List of start locations
+                goals (list): List of goal locations
+                constraints (list): List of constraints
+
+            Update starting locations and goal locations, and constraints to match goal_timestep
+    """
     for agent, goal in enumerate(goal_list):
         loc = tuple(goal['loc'])
         goals[agent] = loc
@@ -108,6 +125,17 @@ Replan all agent paths every time we update the constraints.
 Constraints added may be due to new obstacles, or agent locations.
 """
 def replan(number_agents, single_agent_planner_map, starts, goals, heuristics, constraints):
+    """
+            Args:
+                number_agents (int): number of agents
+                single_agent_planner_map (2D boolean array): environment map
+                starts (list): List of start locations
+                goals (list): List of goal locations
+                heuristics (list): List of heuristics (distance from agent position to goal
+                constraints (list): List of constraints
+
+            Replan all agent paths with updated constraints.
+        """
     result = []
     for i in range(number_agents):  # Find path for each agent
         path = a_star(single_agent_planner_map, starts[i], goals[i], heuristics[i],
@@ -116,15 +144,15 @@ def replan(number_agents, single_agent_planner_map, starts, goals, heuristics, c
             raise BaseException('No solutions')
         result.append(path)
 
-    print("paths:")
-    for p in result:
-        print(p)
     return result
 
-"""
-Change format of the map to use with single_agent_planner.py
-"""
 def initialize_single_agent_planner_map(map):
+    """
+            Args:
+                map (2D int array): environment map
+
+            Change format of the map to boolean to use with single_agent_planner.py
+        """
     result = []
     for i in range(len(map)):
         new_row = []
