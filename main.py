@@ -4,6 +4,7 @@ from helper_functions import initialize_single_agent_planner_map, replan, \
 from map_validator import validate_map  # Import the validator
 from single_agent_planner import compute_heuristics
 from prioritized import PrioritizedPlanningSolver
+from cbs import CBSSolver
 from dynamic_map_visualizer import Animation
 from functools import reduce
 import json
@@ -174,11 +175,16 @@ def main():
         print("***Initialize Prioritized***")
         solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
         result = solver.find_solution()
+   
     elif args.algorithm == "CBS":
         print("***Initialize CBS***")
+        solver = CBSSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
+        result = solver.find_solution()
 
     elif args.algorithm == "CBS Disjoint":
         print("***Initialize CBS with disjoint splitting***")
+        solver = CBSSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
+        result = solver.find_solution(disjoint=True)
 
     elif args.algorithm == "LNS":
         print("***Initialize Large Neighborhood Search***")
@@ -213,11 +219,16 @@ def main():
             print("***Run Prioritized with changing goals***")
             solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution()
+
         elif args.algorithm == "CBS":
             print("***Run CBS with changing goals***")
+            solver = CBSSolver(single_agent_planner_map, starts, goals, constraints)
+            new_result = solver.find_solution(disjoint=False)
 
         elif args.algorithm == "CBS Disjoint":
             print("***Run CBS with disjoint splitting and changing goals***")
+            solver = CBSSolver(single_agent_planner_map, starts, goals, constraints)
+            new_result = solver.find_solution(disjoint=True)
 
         elif args.algorithm == "LNS":
             print("***Run Large Neighborhood Search with changing goals***")
