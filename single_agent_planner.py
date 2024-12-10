@@ -68,6 +68,8 @@ def build_constraint_table(constraints, agent, goal_location):
         if c['agent'] == agent:
             if not 'positive' in c:  # disjoint splitting support
                 c['positive'] = False  # for standard splitting, constraint is always negative.
+            if 'timestep' not in c:
+                raise KeyError(f"Constraint missing 'timestep': {c}")
             timestep = c['timestep']
 
             if not 'type' in c:
