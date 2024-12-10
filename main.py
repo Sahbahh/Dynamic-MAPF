@@ -7,6 +7,7 @@ from prioritized import PrioritizedPlanningSolver
 from cbs import CBSSolver
 from dynamic_map_visualizer import Animation
 from functools import reduce
+from lns import LNSSolver
 import json
 import copy
 
@@ -188,6 +189,8 @@ def main():
 
     elif args.algorithm == "LNS":
         print("***Initialize Large Neighborhood Search***")
+        solver = LNSSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
+        result = solver.find_solution()
 
     # Adapt to changing goals
     starts = copy.deepcopy(agent_starts)
@@ -196,6 +199,7 @@ def main():
     new_result = []
 
     for goal_timestep, goal_list in goal_dictionary.items():
+
 
         # extend all paths to the longest path
         max_path = len(reduce(lambda x, y: x if len(x) > len(y) else y, result))
@@ -230,13 +234,22 @@ def main():
             solver = CBSSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution(disjoint=True)
 
+
         elif args.algorithm == "LNS":
-            print("***Run Large Neighborhood Search with changing goals***")
+
+            print("***Initialize Large Neighborhood Search***")
+
+            solver = LNSSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
+
+            result = solver.find_solution()
 
         # update resulting path by slicing
         # new path: old path from timestep 0 to new goal timestep + new path
         for i, _ in enumerate(result):
-            result[i] = result[i][:goal_timestep - 1] + new_result[i]
+            if i < len(new_result):
+                result[i] = result[i][:goal_timestep - 1] + new_result[i]
+            else:
+                print(f"Warning: No new path found for agent {i}. Keeping the original path.")
 
     print("DYNAMIC OBSTACLES + DYNAMIC GOALS + COLLISION DETECTION AGENT PATHS")
     for i, p in enumerate(result):
