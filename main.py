@@ -1,6 +1,7 @@
+from independent import IndependentSolver
 from input_parser import parse_input
-from helper_functions import initialize_single_agent_planner_map, replan, \
-    compile_obstacle_dict, compile_goals_dict, update_constraints
+from helper_functions import initialize_single_agent_planner_map, \
+    compile_obstacle_dict, compile_goals_dict, update_constraints, replan
 from map_validator import validate_map  # Import the validator
 from single_agent_planner import compute_heuristics
 from prioritized import PrioritizedPlanningSolver
@@ -10,6 +11,8 @@ from functools import reduce
 from lns import LNSSolver
 import json
 import copy
+
+from space_time_a_star import SpaceTimePlanningSolver
 
 """
 DYNAMIC MAPPING FOR MAPF ALGORITHMS
@@ -73,26 +76,26 @@ def main():
 
     number_agents = len(agent_starts)
     single_agent_planner_map = initialize_single_agent_planner_map(map_grid)
-
+    # compute heuristics for the low-level search
     heuristics = []
     for goal in agent_goals:
         heuristics.append(compute_heuristics(single_agent_planner_map, goal))
 
-
     ##########################################
     ## SECTION 1: INDEPENDENT AGENT PLANNER ##
     """
-    Agent paths are planned independently with a-star search regardless of obstacles or collisions.
+    Agent paths are planned independently with a-star search regardless of obstacles or agent collisions.
     """
     print("starts: ", agent_starts)
     print("goals: ", agent_goals)
 
     agent_constraints = []
     print("RESULT PATH WITH INDEPENDENT PLANNING")
-    a_star_paths = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics,
-                       agent_constraints)
+    solver = IndependentSolver(
+        single_agent_planner_map, agent_starts, agent_goals)
+    result = solver.find_solution()
 
-    for i,p in enumerate(a_star_paths):
+    for i,p in enumerate(result):
         print(i,p)
 
     ########################################################################
@@ -141,10 +144,11 @@ def main():
 
     # Replan all agent paths using added constraints with a star search.
     print("RESULT PATH WITH OBSTACLE CONSTRAINTS")
-    obstacle_free_paths = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics,
-                       agent_constraints)
 
-    for i,p in enumerate(obstacle_free_paths):
+    result = replan(number_agents, single_agent_planner_map, agent_starts, agent_goals,
+                    heuristics, agent_constraints)
+
+    for i,p in enumerate(result):
         print(i,p)
 
     ########################################################################
@@ -153,8 +157,8 @@ def main():
     """
             Implement replanning of agent paths to avoid agent collision
             using our chosen path planning algorithms here:
-    
-        1. Space-Time A* 
+
+        1. Space-Time A*
         2. Prioritized
         3. CBS
         4. CBS with disjoint splitting
@@ -170,8 +174,10 @@ def main():
     # 1. Create your own algorithm class (eg. prioritized.py)
     # 2. If your algorithm lower level search is a-star, then you can call single_agent_planner.py with your
     # algorithm class. e.g. prioritized.py calls single_agent_planner.py.
-    if args.algorithm == "Space Time A*":
+    if args.algorithm == "STA*":
         print("***Initialize Space Time A****")
+        solver = SpaceTimePlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints, max_steps)
+        result = solver.find_solution()
     elif args.algorithm == "Prioritized":
         print("***Initialize Prioritized***")
         solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
@@ -215,10 +221,17 @@ def main():
         # update constraints is in helper functions
         update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
 
-        # ADD MORE SEARCH ALGORITHMS HERE
-        if args.algorithm == "Space Time A*":
-            print("***Run Space Time A with changing goals****")
+        # recompute heuristics due to changing goal positions
+        heuristics = []
+        for goal in agent_goals:
+            heuristics.append(compute_heuristics(single_agent_planner_map, goal))
 
+        # ADD MORE SEARCH ALGORITHMS HERE
+        if args.algorithm == "STA*":
+            print("***Run Space Time A with changing goals****")
+            solver = SpaceTimePlanningSolver(single_agent_planner_map, starts, goals, constraints,
+                                             max_steps)
+            new_result = solver.find_solution()
         elif args.algorithm == "Prioritized":
             print("***Run Prioritized with changing goals***")
             solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
@@ -260,6 +273,7 @@ def main():
     ################ VISUALIZE AGENT PATHS ######################
 
     # Animation class is in dynamic_map_visualizer.py
+    # goal_dictionary = []
     animation = Animation(single_agent_planner_map, agent_starts, agent_goals, result,
                           obstacle_dictionary, goal_dictionary)
     animation.show()

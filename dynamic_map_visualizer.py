@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import random
 from matplotlib.colors import ListedColormap
-from matplotlib.patches import Circle, Rectangle
+from matplotlib.patches import Circle, Rectangle, bbox_artist
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
@@ -62,6 +62,12 @@ class Animation:
         self.grid = np.array(my_map)
         self.ax.imshow(self.grid, cmap=cmap, origin="upper", interpolation="none")
 
+        #setting ticks
+        x_ticks = [i for i in range(len(self.my_map[0]))]
+        y_ticks = [i for i in range(len(self.my_map))]
+        self.ax.set_xticks(x_ticks)
+        self.ax.set_yticks(y_ticks)
+
         # update appearance timestep to be end time, to use as trigger to set obstacle rectangle to invisible
         if self.obstacles_dict:
             for k, obs_list in self.obstacles_dict.items():
@@ -118,9 +124,9 @@ class Animation:
 
         self.animation = animation.FuncAnimation(self.fig, self.animate_func,
                                                  init_func=self.init_func,
-                                                 frames=int(self.T + 1) * 10,
+                                                 frames=int(self.T + 1) * 10 + 5, # add small delay between repeats
                                                  interval=100,
-                                                 blit=True)
+                                                 blit=True, repeat=True, repeat_delay=1000)
         # toggle pause with button event
         self.paused = False
         self.fig.canvas.mpl_connect('button_press_event', self.toggle_pause)
@@ -143,9 +149,9 @@ class Animation:
             self.ax.add_artist(a)
 
         # Add gridlines for better visibility
-        for x in range(len(self.my_map) + 1):
+        for x in range(len(self.my_map[0]) + 1):
             self.ax.axvline(x - 0.5, color="black", linewidth=0.5, linestyle="-")
-        for y in range(len(self.my_map[0]) + 1):
+        for y in range(len(self.my_map) + 1):
             self.ax.axhline(y - 0.5, color="black", linewidth=0.5, linestyle="-")
 
         # Legend

@@ -3,7 +3,7 @@ import math
 
 """
 From individual assignment.
-Defines a star search algorithm.
+Defines Space-Time A* search algorithm.
 """
 
 def move(loc, dir):
@@ -157,7 +157,8 @@ def compare_nodes(n1, n2):
 
 
 def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
-    """ my_map      - binary obstacle map
+    """
+        my_map      - binary obstacle map
         start_loc   - start position
         goal_loc    - goal position
         agent       - the agent that is being re-planned
