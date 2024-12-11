@@ -95,9 +95,11 @@ class CBSSolver:
 
         # Find initial path for each agent
         for i in range(self.num_of_agents):
-            path = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i, root['constraints'])
+            path, expansions, generated = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i, root['constraints'])
             if path is None:
                 raise BaseException("No solutions")
+            self.num_of_expanded += expansions
+            self.num_of_generated += generated
             root['paths'].append(path)
 
         root['cost'] = get_sum_of_cost(root['paths'])
@@ -118,6 +120,9 @@ class CBSSolver:
             constraints = disjoint_splitting(collision) if disjoint else standard_splitting(collision)
 
             for constraint in constraints:
+                # agent_id comes from the current constraint
+                agent_id = constraint['agent']
+
                 child = {
                     'cost': 0,
                     'constraints': node['constraints'] + [constraint],
@@ -125,11 +130,18 @@ class CBSSolver:
                     'collisions': []
                 }
 
-                # Replan the path for the agent affected by the new constraint
-                agent_id = constraint['agent']
-                path = a_star(self.my_map, self.starts[agent_id], self.goals[agent_id], self.heuristics[agent_id], agent_id, child['constraints'])
+                # Replan the path for the affected agent
+                path, expansions, generated = a_star(self.my_map,
+                                                     self.starts[agent_id],
+                                                     self.goals[agent_id],
+                                                     self.heuristics[agent_id],
+                                                     agent_id,
+                                                     child['constraints'])
                 if path is None:
                     continue
+
+                self.num_of_expanded += expansions
+                self.num_of_generated += generated
 
                 child['paths'][agent_id] = path
                 child['cost'] = get_sum_of_cost(child['paths'])

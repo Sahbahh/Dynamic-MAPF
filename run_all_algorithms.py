@@ -1,7 +1,8 @@
 from input_parser import parse_input
 from helper_functions import initialize_single_agent_planner_map, replan, compile_obstacle_dict, compile_goals_dict, update_constraints
 from map_validator import validate_map
-from single_agent_planner import compute_heuristics
+from single_agent_planner import compute_heuristics, get_sum_of_cost
+import matplotlib.pyplot as plt
 from prioritized import PrioritizedPlanningSolver
 from cbs import CBSSolver
 from dynamic_map_visualizer import Animation
@@ -16,6 +17,19 @@ import argparse
 This is the implementation for running all the algorithms
 
 """
+
+def convert_to_rc(position, rows, cols):
+    # position could be [row, col] or a single integer node ID
+    if isinstance(position, int):
+        # Convert single integer node ID into (row, col)
+        return (position // cols, position % cols)
+    elif isinstance(position, list) and len(position) == 2:
+        # Already [row, col], just make it a tuple
+        return (position[0], position[1])
+    else:
+        raise ValueError(f"Agent position {position} is not in a recognized format.")
+
+
 def run_single_algorithm(input_file, algorithm_name):
     # Load and validate input data
     with open(input_file, "r") as f:
@@ -27,16 +41,22 @@ def run_single_algorithm(input_file, algorithm_name):
     # Parse the input and initialize variables
     map_dimensions, agents_data, input_data = parse_input(input_file)
     rows, cols = map_dimensions
-    agent_starts = [tuple(agent["start"]) for agent in agents_data]
-    agent_goals = [tuple(agent["goal"]) for agent in agents_data]
-    map_grid = [[0 for _ in range(cols)] for _ in range(rows)]
 
+    agent_starts = []
+    agent_goals = []
+    for agent in agents_data:
+        start_rc = convert_to_rc(agent["start"], rows, cols)
+        goal_rc = convert_to_rc(agent["goal"], rows, cols)
+        agent_starts.append(start_rc)
+        agent_goals.append(goal_rc)
+
+    map_grid = [[0 for _ in range(cols)] for _ in range(rows)]
     number_agents = len(agent_starts)
     single_agent_planner_map = initialize_single_agent_planner_map(map_grid)
 
     heuristics = [compute_heuristics(single_agent_planner_map, g) for g in agent_goals]
 
-    # Initial planning with a_star to demonstrate environment setup
+    # Initial planning
     agent_constraints = []
     replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics, agent_constraints)
 
@@ -55,10 +75,8 @@ def run_single_algorithm(input_file, algorithm_name):
             current_time = timestep
             for _ in range(obstacle['appearance_timestep']):
                 for agent in range(number_agents):
-                    # vertex constraints
                     agent_constraints.append({'agent': agent, 'loc': obstacle_location,
                                               'timestep': current_time, 'type': 'vertex'})
-                    # edge constraints
                     start_pos = []
                     for dir in directions:
                         pos = (obstacle_location[0] + dir[0], obstacle_location[1] + dir[1])
@@ -84,11 +102,9 @@ def run_single_algorithm(input_file, algorithm_name):
         solver = LNSSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
         result = solver.find_solution()
     else:
-        # If somehow an unsupported algorithm is passed, just return
         print(f"Algorithm {algorithm_name} not implemented in run_all_algorithms.")
         return None
 
-    # Adapt to changing goals
     starts = copy.deepcopy(agent_starts)
     goals = copy.deepcopy(agent_goals)
     constraints = copy.deepcopy(agent_constraints)
@@ -127,22 +143,38 @@ def run_single_algorithm(input_file, algorithm_name):
 
     # Visualize the final result for this algorithm
     animation = Animation(single_agent_planner_map, agent_starts, agent_goals, result,
-                        obstacle_dictionary, goal_dictionary, algorithm_name=algorithm_name)
+                          obstacle_dictionary, goal_dictionary, algorithm_name=algorithm_name)
     animation.show()
 
-
-    return result
+    return result, solver
 
 def main():
     parser = argparse.ArgumentParser(description="Run all algorithms for MAPF")
     parser.add_argument("input_file", type=str, help="Path to the input JSON file")
     args = parser.parse_args()
 
-    # Always run all algorithms in sequence
     algorithms_to_run = ["Prioritized", "CBS", "CBS Disjoint", "LNS"]
+    summary_data = []
+
     for alg in algorithms_to_run:
         print(f"\n--- Running {alg} ---")
-        run_single_algorithm(args.input_file, alg)
+        result, solver = run_single_algorithm(args.input_file, alg)
+        sum_of_cost = get_sum_of_cost(result)
+        expanded = getattr(solver, 'num_of_expanded', 0)
+        generated = getattr(solver, 'num_of_generated', 0)
+        summary_data.append([alg, sum_of_cost, expanded, generated])
+
+    # Display summary table
+    fig, ax = plt.subplots(figsize=(6, 3))
+    fig.suptitle("Comparison of the Algorithms")
+    columns = ["Algorithm", "Sum of Cost", "Expanded", "Generated"]
+    ax.axis('tight')
+    ax.axis('off')
+    table = ax.table(cellText=summary_data, colLabels=columns, loc='center')
+    table.auto_set_font_size(False)
+    table.set_fontsize(8)
+    table.auto_set_column_width(col=list(range(len(columns))))
+    plt.show()
 
 if __name__ == "__main__":
     main()

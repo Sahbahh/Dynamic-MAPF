@@ -18,29 +18,38 @@ class PrioritizedPlanningSolver(object):
         self.constraints = constraints
 
         self.CPU_time = 0
+        self.num_of_expanded = 0
+        self.num_of_generated = 0
 
-        # compute heuristics for the low-level search
-        self.heuristics = []
-        for goal in self.goals:
-            self.heuristics.append(compute_heuristics(my_map, goal))
+        # Compute heuristics for each agent's goal
+        self.heuristics = [compute_heuristics(my_map, goal) for goal in self.goals]
 
     def find_solution(self):
         """ Finds paths for all agents from their start locations to their goal locations."""
-
         start_time = timer.time()
         constraints = self.constraints
-
-        priorities = [0,1,2]
-        result = []
-        for i in range(self.num_of_agents):
-            result.append(None)
+        priorities = list(range(self.num_of_agents))  
+        result = [None] * self.num_of_agents
 
         for i in range(self.num_of_agents):
             current_agent = priorities[i]
-            path = a_star(self.my_map, self.starts[current_agent], self.goals[current_agent],
-                          self.heuristics[current_agent], current_agent, constraints)
+            # Note: We now capture expansions and generated from a_star
+            path, expansions, generated = a_star(
+                self.my_map, 
+                self.starts[current_agent], 
+                self.goals[current_agent],
+                self.heuristics[current_agent], 
+                current_agent, 
+                constraints
+            )
+
             if path is None:
                 raise BaseException('No solutions')
+
+            # Accumulate statistics
+            self.num_of_expanded += expansions
+            self.num_of_generated += generated
+
             result[current_agent] = path
 
             ##############################
@@ -64,12 +73,13 @@ class PrioritizedPlanningSolver(object):
                 constraints.append({'agent': agent, 'loc': [path[-1]], 'timestep': len(path) - 1,
                                         'type': 'inf'})
 
-
-            ##############################
-
         self.CPU_time = timer.time() - start_time
-        # print("\n Found a solution! \n")
-        # print("CPU time (s):    {:.2f}".format(self.CPU_time))
-        # print("Sum of costs:    {}".format(get_sum_of_cost(result)))
-        # print(result)
+
+        # Print results including expansions and generated
+        print("\n Found a solution! \n")
+        print("CPU time (s):    {:.2f}".format(self.CPU_time))
+        print("Sum of costs:    {}".format(get_sum_of_cost(result)))
+        print(f"Expanded nodes: {self.num_of_expanded}")
+        print(f"Generated nodes: {self.num_of_generated}")
+        print(result)
         return result

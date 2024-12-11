@@ -1,9 +1,7 @@
 from cbs import CBSSolver  # Import your CBS implementation
 import random
 from cbs import detect_collisions
-
-from single_agent_planner import a_star, compute_heuristics
-
+from single_agent_planner import a_star, compute_heuristics, get_sum_of_cost
 
 class LNSSolver:
     def __init__(self, my_map, starts, goals, constraints):
@@ -23,6 +21,10 @@ class LNSSolver:
         # Precompute heuristics for each goal
         self.heuristics = [compute_heuristics(my_map, goal) for goal in goals]
 
+        # Track expansions and generated nodes
+        self.num_of_expanded = 0
+        self.num_of_generated = 0
+
     def initialize_solution_with_cbs(self):
         """
         Use CBS to find the initial solution, resolving collisions.
@@ -34,6 +36,11 @@ class LNSSolver:
         except BaseException as e:
             print(f"CBS failed to find a solution: {e}")
             return None
+
+        # Accumulate CBS's expansions and generated into LNS counts
+        self.num_of_expanded += cbs_solver.num_of_expanded
+        self.num_of_generated += cbs_solver.num_of_generated
+
         return solution
 
     def destroy(self, solution, destroy_percentage=0.3):
@@ -59,7 +66,7 @@ class LNSSolver:
         repaired_solution = solution.copy()
 
         for agent in destroy_indices:
-            path = a_star(
+            path, expansions, generated = a_star(
                 self.my_map,
                 self.starts[agent],
                 self.goals[agent],
@@ -67,11 +74,15 @@ class LNSSolver:
                 agent,
                 self.constraints
             )
+            # Accumulate expansions and generated
+            self.num_of_expanded += expansions
+            self.num_of_generated += generated
+
             if path is None:
                 print(f"Agent {agent} failed to find a path. Keeping its original path.")
                 continue
-
             repaired_solution[agent] = path
+
         return repaired_solution
 
     def find_solution(self, max_iterations=100, destroy_percentage=0.3):
@@ -97,6 +108,9 @@ class LNSSolver:
             collisions = detect_collisions(solution)
             if not collisions:
                 print("No collisions detected. Solution found!")
+                # Print expansions and generated here or after finishing
+                print(f"Expanded nodes: {self.num_of_expanded}")
+                print(f"Generated nodes: {self.num_of_generated}")
                 return solution
 
             # Destroy phase: Select colliding agents for replanning
@@ -119,6 +133,8 @@ class LNSSolver:
                 print("No improvement in this iteration.")
 
         print("LNS failed to find a better solution within the maximum iterations.")
+        print(f"Expanded nodes: {self.num_of_expanded}")
+        print(f"Generated nodes: {self.num_of_generated}")
         return best_solution
 
     def calculate_solution_cost(self, solution):
