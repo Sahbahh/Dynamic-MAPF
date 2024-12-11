@@ -81,5 +81,5 @@ class PrioritizedPlanningSolver(object):
         print("Sum of costs:    {}".format(get_sum_of_cost(result)))
         print(f"Expanded nodes: {self.num_of_expanded}")
         print(f"Generated nodes: {self.num_of_generated}")
-        print(result)
+        # print(result)
         return result

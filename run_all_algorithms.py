@@ -105,6 +105,11 @@ def run_single_algorithm(input_file, algorithm_name):
         print(f"Algorithm {algorithm_name} not implemented in run_all_algorithms.")
         return None
 
+    # Initialize cumulative expansions and generations
+    expansions_cumulative = getattr(solver, 'num_of_expanded', 0)
+    generated_cumulative = getattr(solver, 'num_of_generated', 0)
+
+
     starts = copy.deepcopy(agent_starts)
     goals = copy.deepcopy(agent_goals)
     constraints = copy.deepcopy(agent_constraints)
@@ -135,18 +140,37 @@ def run_single_algorithm(input_file, algorithm_name):
             solver = LNSSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution()
 
+        # Accumulate expansions and generated from each run
+        expansions_cumulative += getattr(solver, 'num_of_expanded', 0)
+        generated_cumulative += getattr(solver, 'num_of_generated', 0)
+
         for i, _ in enumerate(result):
             if i < len(new_result):
-                result[i] = result[i][:goal_timestep - 1] + new_result[i]
+                # If the last state of the current path and the first state of the new path are the same,
+                # remove the duplicate from new_result.
+                if result[i][-1] == new_result[i][0]:
+                    new_result[i].pop(0)
+                # Now simply extend the current path by the new segment.
+                result[i].extend(new_result[i])
             else:
                 print(f"Warning: No new path found for agent {i}. Keeping the original path.")
 
-    # Visualize the final result for this algorithm
+    # After all dynamic changes, use the cumulative expansions and generated for the final return
+    # Create a dummy solver-like object or simply return the values
+    class FinalSolverStats:
+        pass
+
+    final_solver_stats = FinalSolverStats()
+    final_solver_stats.num_of_expanded = expansions_cumulative
+    final_solver_stats.num_of_generated = generated_cumulative
+
+    # Visualization
     animation = Animation(single_agent_planner_map, agent_starts, agent_goals, result,
                           obstacle_dictionary, goal_dictionary, algorithm_name=algorithm_name)
     animation.show()
 
-    return result, solver
+    # Return the final result and the cumulative stats
+    return result, final_solver_stats
 
 def main():
     parser = argparse.ArgumentParser(description="Run all algorithms for MAPF")
