@@ -18,7 +18,7 @@ class Animation:
     Click on graph to pause/resume animation
 
     """
-    def __init__(self, my_map, starts, goals, paths, obstacles, goals_dictionary):
+    def __init__(self, my_map, starts, goals, paths, obstacles, goals_dictionary, algorithm_name=None):
         self.my_map = my_map
         self.starts = []
         for start in starts:
@@ -50,7 +50,15 @@ class Animation:
         """
         self.fig, self.ax = plt.subplots(figsize=(8, 8))
         self.fig.set_figwidth(12)
-        self.ax.set_title("Dynamic Map Animation")
+        
+        # Show the name of the algorithm it is running
+        # This happens when you run it from run_all_algorithmspy to compare
+        if algorithm_name is not None:
+            self.ax.set_title(f"Dynamic Map Animation - {algorithm_name}")
+        # This happens when you call it from main.py individually
+        else:
+            self.ax.set_title("Dynamic Map Animation")
+
 
         """
                         Create a discrete colormap (0: white for free, 1: black for obstacles)

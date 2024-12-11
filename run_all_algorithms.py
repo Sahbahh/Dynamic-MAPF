@@ -127,8 +127,9 @@ def run_single_algorithm(input_file, algorithm_name):
 
     # Visualize the final result for this algorithm
     animation = Animation(single_agent_planner_map, agent_starts, agent_goals, result,
-                          obstacle_dictionary, goal_dictionary)
+                        obstacle_dictionary, goal_dictionary, algorithm_name=algorithm_name)
     animation.show()
+
 
     return result
 
