@@ -3,7 +3,7 @@ import math
 
 """
 From individual assignment.
-Defines a star search algorithm.
+Defines Space-Time A* search algorithm.
 """
 
 def move(loc, dir):
