@@ -12,10 +12,8 @@ import json
 import copy
 import argparse
 
-
 """
-This is the implementation for running all the algorithms
-
+This is the implementation for running all the algorithms.
 """
 
 def convert_to_rc(position, rows, cols):
@@ -89,6 +87,7 @@ def run_single_algorithm(input_file, algorithm_name):
                 current_time += 1
 
     # Run the chosen MAPF algorithm
+    # TODO: Hani
     if algorithm_name == "Prioritized":
         solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
         result = solver.find_solution()
@@ -109,7 +108,6 @@ def run_single_algorithm(input_file, algorithm_name):
     expansions_cumulative = getattr(solver, 'num_of_expanded', 0)
     generated_cumulative = getattr(solver, 'num_of_generated', 0)
 
-
     starts = copy.deepcopy(agent_starts)
     goals = copy.deepcopy(agent_goals)
     constraints = copy.deepcopy(agent_constraints)
@@ -127,6 +125,7 @@ def run_single_algorithm(input_file, algorithm_name):
 
         update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
 
+        # TODO: Hani
         if algorithm_name == "Prioritized":
             solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution()
@@ -140,23 +139,20 @@ def run_single_algorithm(input_file, algorithm_name):
             solver = LNSSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution()
 
-        # Accumulate expansions and generated from each run
         expansions_cumulative += getattr(solver, 'num_of_expanded', 0)
         generated_cumulative += getattr(solver, 'num_of_generated', 0)
 
+        # Ensure continuous paths by extending rather than slicing
         for i, _ in enumerate(result):
             if i < len(new_result):
-                # If the last state of the current path and the first state of the new path are the same,
-                # remove the duplicate from new_result.
+                # If last node of old path and first node of new path are the same, remove duplicate
                 if result[i][-1] == new_result[i][0]:
                     new_result[i].pop(0)
-                # Now simply extend the current path by the new segment.
                 result[i].extend(new_result[i])
             else:
                 print(f"Warning: No new path found for agent {i}. Keeping the original path.")
 
-    # After all dynamic changes, use the cumulative expansions and generated for the final return
-    # Create a dummy solver-like object or simply return the values
+    # After all dynamic changes, create a dummy solver-like object to return
     class FinalSolverStats:
         pass
 
@@ -169,14 +165,47 @@ def run_single_algorithm(input_file, algorithm_name):
                           obstacle_dictionary, goal_dictionary, algorithm_name=algorithm_name)
     animation.show()
 
-    # Return the final result and the cumulative stats
     return result, final_solver_stats
+
 
 def main():
     parser = argparse.ArgumentParser(description="Run all algorithms for MAPF")
     parser.add_argument("input_file", type=str, help="Path to the input JSON file")
     args = parser.parse_args()
 
+    # Load the input once to compute general info
+    with open(args.input_file, "r") as f:
+        data = json.load(f)
+
+    map_dimensions, agents_data, input_data = parse_input(args.input_file)
+    number_of_agents = len(agents_data)
+
+    # Compute final number of obstacles and frequency of changes
+    obstacles_set = set()
+    goal_changes_count = 0
+    obstacle_changes_count = 0
+
+    for t, changes in input_data.items():
+        added = changes.get('add_obstacles', [])
+        removed = changes.get('remove_obstacles', [])
+        # Count goal changes if present
+        if 'change_goals' in changes and changes['change_goals']:
+            goal_changes_count += 1
+        # Count obstacle changes if any additions or removals
+        if added or removed:
+            obstacle_changes_count += 1
+
+        # Apply obstacle changes to keep track of final obstacle set
+        for pos in added:
+            obstacles_set.add(tuple(pos))
+        for pos in removed:
+            if tuple(pos) in obstacles_set:
+                obstacles_set.remove(tuple(pos))
+
+    number_of_obstacles = len(obstacles_set)
+
+
+    # TODO: Hani
     algorithms_to_run = ["Prioritized", "CBS", "CBS Disjoint", "LNS"]
     summary_data = []
 
@@ -188,16 +217,77 @@ def main():
         generated = getattr(solver, 'num_of_generated', 0)
         summary_data.append([alg, sum_of_cost, expanded, generated])
 
+
+    #################################
+    # Plot the comparison figure
+    #################################
+
     # Display summary table
-    fig, ax = plt.subplots(figsize=(6, 3))
-    fig.suptitle("Comparison of the Algorithms")
+    fig = plt.figure(figsize=(10, 5))
+    
+    # map info row
+    ax_info = fig.add_subplot(211) 
+    ax_info.set_title("Comparison of the Algorithms", fontsize=16, pad=1)
+    ax_info.axis('off')
+    
+    ax_info = plt.gca()
+    ax_info.set_position((0, 0, 1, 0.9)) 
+
+
+    row_data = [[
+        f"Map: {map_dimensions[0]}x{map_dimensions[1]}",
+        f"#Agents: {number_of_agents}",
+        f"#Obstacles: {number_of_obstacles}",
+        f"Goal Changes: {goal_changes_count}",
+        f"Obstacle Changes: {obstacle_changes_count}"
+    ]]
+
+    table_info = ax_info.table(cellText=row_data, loc='top', cellLoc='center', bbox=[0, 0.8, 1, 0.15])
+
+    for key, cell in table_info.get_celld().items():
+        cell.set_fontsize(12)
+        cell.set_edgecolor('white')
+        cell.set_facecolor("#a2d2ff")
+
+    table_info.auto_set_font_size(False)
+
+    # Same width for all the cells
+    rows = len(row_data)
+    cols = len(row_data[0])
+    cell_width = 1 / cols
+
+    for row in range(rows):
+        for col in range(cols):
+            table_info[(row, col)].set_width(cell_width)
+
+    # Axis for the summary table
+    ax_main = fig.add_subplot(212)
+    ax_main.axis('off')
+    ax_main = plt.gca()
+
+
+
+
     columns = ["Algorithm", "Sum of Cost", "Expanded", "Generated"]
-    ax.axis('tight')
-    ax.axis('off')
-    table = ax.table(cellText=summary_data, colLabels=columns, loc='center')
-    table.auto_set_font_size(False)
-    table.set_fontsize(8)
-    table.auto_set_column_width(col=list(range(len(columns))))
+    table_main = ax_main.table(cellText=summary_data, colLabels=columns, loc='center',bbox=[0, 0.65, 1, 0.95])
+
+    # Style the main table
+    header_color = "#cef4ff"
+    row_colors = ["#f3cfce", "#f1adb9", "#f09caf", "#ee839f", "#e05780"]
+
+    for key, cell in table_main.get_celld().items():
+        if key[0] == 0:  # Header row
+            cell.set_facecolor(header_color)
+        elif key[0] > 0:
+            cell.set_facecolor(row_colors[(key[0]-1) % len(row_colors)])
+            
+    table_main.auto_set_font_size(False)
+    table_main.set_fontsize(12)
+
+    for row in range(rows):
+        for col in range(cols):
+            table_info[(row, col)].set_width(cell_width)
+    
     plt.show()
 
 if __name__ == "__main__":
