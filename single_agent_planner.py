@@ -80,13 +80,11 @@ def build_constraint_table(constraints, agent, goal_location):
 
             new_c = {'loc': c['loc'], 'type': c['type'], 'positive': c['positive']}
 
-            if c['type'] == 'vertex' or c['type'] == 'edge':
-                # add constraints indexed by timestep for vertex and edges
+            if c['type'] in ['vertex', 'edge']:
                 if timestep in result:
                     result[timestep].append(new_c)
                 else:
-                    result[timestep] = []
-                    result[timestep].append(new_c)
+                    result[timestep] = [new_c]
             elif c['type'] == 'inf':
                 # add special inf constraints
                 inf_constraints[c['loc'][0]] = new_c
@@ -158,29 +156,22 @@ def compare_nodes(n1, n2):
 
 def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     """ my_map      - binary obstacle map
-        start_loc   - start position
-        goal_loc    - goal position
+        start_loc   - start position (tuple)
+        goal_loc    - goal position (tuple)
         agent       - the agent that is being re-planned
-        constraints - constraints defining where robot should or cannot go at each timestep
+        constraints - constraints defining where the agent should or cannot go at each timestep
     """
+    # Track expansions and generated counts
+    expansions = 0
+    generated = 0
 
     # precalculate max steps
-    max_steps = 0
-    for row in my_map: # env size
-        max_steps += row.count(False)
-
-    # add path length of max higher priority nodes
+    max_steps = sum(row.count(False) for row in my_map)
     max_steps += math.ceil(len(constraints)/2)
 
     def time_limit_check(node):
-        if node['g_val'] > max_steps:
-            return True
+        return node['g_val'] > max_steps
 
-    ##############################
-    # Task 1.1: Extend the A* search to search in the space-time domain
-    #           rather than space domain, only.
-
-    #get agent constraints
     agent_constraints, goal_constraint, inf_constraints = build_constraint_table(constraints, agent, goal_loc)
 
     open_list = []
@@ -188,25 +179,27 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
     h_value = h_values[start_loc]
     root = {'loc': start_loc, 'g_val': 0, 'h_val': h_value, 'parent': None}
     push_node(open_list, root)
+    generated += 1
     closed_list[(root['loc'],0)] = root
 
     while len(open_list) > 0:
         curr = pop_node(open_list)
-        #############################
-        # Task 1.4: Adjust the goal test condition to handle goal constraints
+        expansions += 1  # We just expanded a node by popping it from the open_list
+
+        # Check goal condition
         if curr['loc'] == goal_loc:
             if goal_constraint is None or curr['g_val'] > goal_constraint:
-                return get_path(curr)
+                return get_path(curr), expansions, generated
 
-        if time_limit_check(curr): # takes way too long to find solution
-            return None
+        if time_limit_check(curr):
+            return None, expansions, generated
 
-        next_timestep = curr['g_val'] + 1  # calculate time-step of child
+        next_timestep = curr['g_val'] + 1
 
         for direction in range(5): # four directions + 1 waiting direction
             child_loc = move(curr['loc'], direction)
 
-            #check if out of map
+            # Check if out of map or blocked
             if(child_loc[0] < 0 or child_loc[0] >= len(my_map)
                 or child_loc[1] < 0 or child_loc[1] >= len(my_map[0])):
                 continue
@@ -215,18 +208,24 @@ def a_star(my_map, start_loc, goal_loc, h_values, agent, constraints):
                 continue
 
             child = {'loc': child_loc,
-                    'g_val': next_timestep,
-                    'h_val': h_values[child_loc],
-                    'parent': curr}
+                     'g_val': next_timestep,
+                     'h_val': h_values[child_loc],
+                     'parent': curr}
 
-            if (child['loc'],next_timestep) in closed_list:
+            # Check constraints
+            if is_constrained(curr['loc'], child_loc, next_timestep, agent_constraints, inf_constraints):
+                continue
+
+            if (child['loc'], next_timestep) in closed_list:
                 existing_node = closed_list[(child['loc'],next_timestep)]
                 if compare_nodes(child, existing_node):
-                    closed_list[(child['loc'],next_timestep)] = child
+                    closed_list[(child['loc'], next_timestep)] = child
                     push_node(open_list, child)
-            #check constrain for 4 directions + 1 waiting direction
-            elif not is_constrained(curr['loc'], child_loc, next_timestep, agent_constraints, inf_constraints):
+                    generated += 1
+            else:
                 closed_list[(child['loc'], next_timestep)] = child
                 push_node(open_list, child)
+                generated += 1
 
-    return None  # Failed to find solutions
+    # No solution found
+    return None, expansions, generated
