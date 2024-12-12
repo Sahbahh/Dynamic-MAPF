@@ -142,7 +142,7 @@ def replan(number_agents, single_agent_planner_map, starts, goals, heuristics, c
                       i, constraints)
         if path is None:
             raise BaseException('No solutions')
-        result.append(path)
+        result.append(path[0]) # only return the path not the generated/expansion nodes
 
     return result
 

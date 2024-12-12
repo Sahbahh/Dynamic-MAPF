@@ -1,5 +1,5 @@
 import time as timer
-from single_agent_planner import compute_heuristics, a_star
+from single_agent_planner import compute_heuristics, a_star, get_sum_of_cost
 
 
 class SpaceTimePlanningSolver(object):
@@ -24,6 +24,8 @@ class SpaceTimePlanningSolver(object):
         self.max_steps = max_steps
 
         self.CPU_time = 0
+        self.num_of_expanded = 0
+        self.num_of_generated = 0
 
         # compute heuristics for the low-level search
         self.heuristics = []
@@ -43,10 +45,15 @@ class SpaceTimePlanningSolver(object):
         reservation_table = dict()
 
         for i in range(self.num_of_agents):
-            path = a_star(self.my_map, self.starts[i], self.goals[i],
+            path, expansions, generated = a_star(self.my_map, self.starts[i], self.goals[i],
                           self.heuristics[i], i, constraints)
             if path is None:
                 raise BaseException('No solutions')
+
+            # Accumulate statistics
+            self.num_of_expanded += expansions
+            self.num_of_generated += generated
+
             result[i] = path
 
             # update reservation table for every agent path solution found
@@ -79,4 +86,11 @@ class SpaceTimePlanningSolver(object):
                                                                 'type': 'inf'})
 
         self.CPU_time = timer.time() - start_time
+
+        # Print results including expansions and generated
+        print("\n Found a solution! \n")
+        print("CPU time (s):    {:.2f}".format(self.CPU_time))
+        print("Sum of costs:    {}".format(get_sum_of_cost(result)))
+        print(f"Expanded nodes: {self.num_of_expanded}")
+        print(f"Generated nodes: {self.num_of_generated}")
         return result
