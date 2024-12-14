@@ -9,7 +9,7 @@ def compile_obstacle_dict(input_data, input_timesteps, rows, cols, max_steps):
 
         Args:
             input_data (JSON): Algorithm name (e.g., "a_star", "cbs").
-            input_timesteps (map): Timesteps in which obstacles appear
+            input_timesteps (list): Timesteps in which obstacles appear
             rows (int): number of rows of map
             cols (int): number of cols of map
             max_steps (int): maximum number of time steps for a search algorithm
@@ -62,7 +62,7 @@ def compile_goals_dict(input_data, input_timesteps):
 
             Args:
                 input_data (JSON): Algorithm name (e.g., "a_star", "cbs").
-                input_timesteps (map): Timesteps in which goals appear
+                input_timesteps (list): Timesteps in which goals appear
 
             Returns:
                 dict: Dictionary of goals sorted by time steps
@@ -142,7 +142,7 @@ def replan(number_agents, single_agent_planner_map, starts, goals, heuristics, c
                       i, constraints)
         if path is None:
             raise BaseException('No solutions')
-        result.append(path)
+        result.append(path[0]) # only return the path not the generated/expansion nodes
 
     return result
 

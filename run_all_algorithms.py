@@ -12,6 +12,8 @@ import json
 import copy
 import argparse
 
+from space_time_a_star import SpaceTimePlanningSolver
+
 """
 This is the implementation for running all the algorithms.
 """
@@ -52,11 +54,7 @@ def run_single_algorithm(input_file, algorithm_name):
     number_agents = len(agent_starts)
     single_agent_planner_map = initialize_single_agent_planner_map(map_grid)
 
-    heuristics = [compute_heuristics(single_agent_planner_map, g) for g in agent_goals]
-
-    # Initial planning
     agent_constraints = []
-    replan(number_agents, single_agent_planner_map, agent_starts, agent_goals, heuristics, agent_constraints)
 
     input_data_timesteps = sorted(map(int, input_data.keys()))
     max_steps = 100
@@ -88,7 +86,11 @@ def run_single_algorithm(input_file, algorithm_name):
 
     # Run the chosen MAPF algorithm
     # TODO: Hani
-    if algorithm_name == "Prioritized":
+    if algorithm_name == "STA*":
+        solver = SpaceTimePlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints,
+                                         max_steps)
+        result = solver.find_solution()
+    elif algorithm_name == "Prioritized":
         solver = PrioritizedPlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
         result = solver.find_solution()
     elif algorithm_name == "CBS":
@@ -126,7 +128,11 @@ def run_single_algorithm(input_file, algorithm_name):
         update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
 
         # TODO: Hani
-        if algorithm_name == "Prioritized":
+        if algorithm_name == "STA*":
+            solver = SpaceTimePlanningSolver(single_agent_planner_map, starts, goals, constraints,
+                                                 max_steps)
+            new_result = solver.find_solution()
+        elif algorithm_name == "Prioritized":
             solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution()
         elif algorithm_name == "CBS":
@@ -142,15 +148,14 @@ def run_single_algorithm(input_file, algorithm_name):
         expansions_cumulative += getattr(solver, 'num_of_expanded', 0)
         generated_cumulative += getattr(solver, 'num_of_generated', 0)
 
-        # Ensure continuous paths by extending rather than slicing
         for i, _ in enumerate(result):
             if i < len(new_result):
-                # If last node of old path and first node of new path are the same, remove duplicate
-                if result[i][-1] == new_result[i][0]:
-                    new_result[i].pop(0)
-                result[i].extend(new_result[i])
+                result[i] = result[i][:goal_timestep - 1] + new_result[i]
             else:
                 print(f"Warning: No new path found for agent {i}. Keeping the original path.")
+        print("INTERMEDIATE RESULTS")
+        for p in result:
+            print(p)
 
     # After all dynamic changes, create a dummy solver-like object to return
     class FinalSolverStats:
@@ -206,7 +211,7 @@ def main():
 
 
     # TODO: Hani
-    algorithms_to_run = ["Prioritized", "CBS", "CBS Disjoint", "LNS"]
+    algorithms_to_run = ["STA*","Prioritized", "CBS", "CBS Disjoint", "LNS"]
     summary_data = []
 
     for alg in algorithms_to_run:
