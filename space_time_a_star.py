@@ -48,7 +48,7 @@ class SpaceTimePlanningSolver(object):
             path, expansions, generated = a_star(self.my_map, self.starts[i], self.goals[i],
                           self.heuristics[i], i, constraints)
             if path is None:
-                raise BaseException('No solutions')
+                return []
 
             # Accumulate statistics
             self.num_of_expanded += expansions
@@ -58,7 +58,6 @@ class SpaceTimePlanningSolver(object):
 
             # update reservation table for every agent path solution found
             for timestep,p in enumerate(path):
-                print(p)
                 if timestep not in reservation_table:
                     reservation_table[timestep] = dict()
                 if i not in reservation_table[timestep]:

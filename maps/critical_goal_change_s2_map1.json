@@ -1,0 +1,37 @@
+{
+    "map_dimensions": [10,10],
+    "agents": [
+      {"start": [0,0], "goal": [0,3]},
+      {"start": [2,0], "goal": [2,3]},
+      {"start": [4,0], "goal": [4,3]},
+      {"start": [6,0], "goal": [6,3]},
+      {"start": [8,0], "goal": [8,3]}
+    ],
+    "timesteps": {
+      "2": {
+        "add_obstacles": [[0,3]],
+        "remove_obstacles": [],
+        "change_goals": [[0,4],[2,4],[4,4],[6,4],[8,4]]
+      },
+      "3": {
+        "add_obstacles": [[2,4]],
+        "remove_obstacles": [],
+        "change_goals": [[0,5],[2,5],[4,5],[6,5],[8,5]]
+      },
+      "4": {
+        "add_obstacles": [[0,5],[4,5]],
+        "remove_obstacles": [],
+        "change_goals": [[0,6],[2,6],[4,6],[6,6],[8,6]]
+      },
+      "5": {
+        "add_obstacles": [[2,6],[6,6]],
+        "remove_obstacles": [],
+        "change_goals": [[0,7],[2,7],[4,7],[6,7],[8,7]]
+      },
+      "6": {
+        "add_obstacles": [[0,7],[4,7],[8,7]],
+        "remove_obstacles": [],
+        "change_goals": [[0,8],[2,8],[4,8],[6,8],[8,8]]
+      }
+    }
+  }

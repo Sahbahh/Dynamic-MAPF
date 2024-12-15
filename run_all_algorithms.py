@@ -85,7 +85,6 @@ def run_single_algorithm(input_file, algorithm_name):
                 current_time += 1
 
     # Run the chosen MAPF algorithm
-    # TODO: Hani
     if algorithm_name == "STA*":
         solver = SpaceTimePlanningSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints,
                                          max_steps)
@@ -127,7 +126,6 @@ def run_single_algorithm(input_file, algorithm_name):
 
         update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
 
-        # TODO: Hani
         if algorithm_name == "STA*":
             solver = SpaceTimePlanningSolver(single_agent_planner_map, starts, goals, constraints,
                                                  max_steps)
@@ -153,9 +151,6 @@ def run_single_algorithm(input_file, algorithm_name):
                 result[i] = result[i][:goal_timestep - 1] + new_result[i]
             else:
                 print(f"Warning: No new path found for agent {i}. Keeping the original path.")
-        print("INTERMEDIATE RESULTS")
-        for p in result:
-            print(p)
 
     # After all dynamic changes, create a dummy solver-like object to return
     class FinalSolverStats:
@@ -210,7 +205,6 @@ def main():
     number_of_obstacles = len(obstacles_set)
 
 
-    # TODO: Hani
     algorithms_to_run = ["STA*","Prioritized", "CBS", "CBS Disjoint", "LNS"]
     summary_data = []
 

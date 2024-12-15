@@ -95,7 +95,7 @@ class Animation:
 
         # draw agents and agent names
         for i in range(len(self.paths)):
-            name = str(i)
+            name = str(i+1)
             self.T = max(self.T, len(paths[i]) - 1)
 
             self.agents[i] = Circle((starts[i][0], starts[i][1]), 0.2, facecolor=self.agent_colors[i],

@@ -1,0 +1,47 @@
+{
+    "map_dimensions": [10,10],
+    "agents": [
+      {"start": [8,9], "goal": [5,1]},
+      {"start": [5,9], "goal": [2,6]},
+      {"start": [2,8], "goal": [6,7]},
+      {"start": [8,6], "goal": [1,3]},
+      {"start": [7,1], "goal": [8,1]}
+    ],
+    "timesteps": {
+      "2": {
+        "add_obstacles": [[7,2]],
+        "remove_obstacles": [],
+        "change_goals": [[2,6],[5,1],[1,3],[8,1],[6,7]]
+      },
+      "3": {
+        "add_obstacles": [[0,0]],
+        "remove_obstacles": [],
+        "change_goals": []
+      },
+      "5": {
+        "add_obstacles": [],
+        "remove_obstacles": [],
+        "change_goals": [[1,3],[8,1],[2,6],[6,7],[5,1]]
+      },
+      "6": {
+        "add_obstacles": [[6,9]],
+        "remove_obstacles": [],
+        "change_goals": [[5,1],[2,6],[1,3],[6,7],[8,1]]
+      },
+      "8": {
+        "add_obstacles": [],
+        "remove_obstacles": [],
+        "change_goals": [[8,1],[1,3],[5,1],[6,7],[2,6]]
+      },
+      "9": {
+        "add_obstacles": [[4,6]],
+        "remove_obstacles": [],
+        "change_goals": []
+      },
+      "11": {
+        "add_obstacles": [[0,5]],
+        "remove_obstacles": [],
+        "change_goals": [[1,3],[5,1],[8,1],[2,6],[6,7]]
+      }
+    }
+  }

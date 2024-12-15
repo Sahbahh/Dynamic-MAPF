@@ -44,7 +44,7 @@ class PrioritizedPlanningSolver(object):
             )
 
             if path is None:
-                raise BaseException('No solutions')
+                return []
 
             # Accumulate statistics
             self.num_of_expanded += expansions
