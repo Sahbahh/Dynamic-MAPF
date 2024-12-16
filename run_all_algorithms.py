@@ -11,6 +11,7 @@ from lns import LNSSolver
 import json
 import copy
 import argparse
+import time as timer
 
 from space_time_a_star import SpaceTimePlanningSolver
 
@@ -31,6 +32,9 @@ def convert_to_rc(position, rows, cols):
 
 
 def run_single_algorithm(input_file, algorithm_name):
+    # Record algorithm time
+    start_time = timer.time()
+
     # Load and validate input data
     with open(input_file, "r") as f:
         data = json.load(f)
@@ -151,6 +155,8 @@ def run_single_algorithm(input_file, algorithm_name):
                 result[i] = result[i][:goal_timestep - 1] + new_result[i]
             else:
                 print(f"Warning: No new path found for agent {i}. Keeping the original path.")
+    # Record algorithm time and format to 6 decimal points
+    total_time = format(timer.time() - start_time, '.6f')
 
     # After all dynamic changes, create a dummy solver-like object to return
     class FinalSolverStats:
@@ -165,7 +171,7 @@ def run_single_algorithm(input_file, algorithm_name):
                           obstacle_dictionary, goal_dictionary, algorithm_name=algorithm_name)
     animation.show()
 
-    return result, final_solver_stats
+    return result, final_solver_stats, total_time
 
 
 def main():
@@ -210,11 +216,11 @@ def main():
 
     for alg in algorithms_to_run:
         print(f"\n--- Running {alg} ---")
-        result, solver = run_single_algorithm(args.input_file, alg)
+        result, solver, total_time = run_single_algorithm(args.input_file, alg)
         sum_of_cost = get_sum_of_cost(result)
         expanded = getattr(solver, 'num_of_expanded', 0)
         generated = getattr(solver, 'num_of_generated', 0)
-        summary_data.append([alg, sum_of_cost, expanded, generated])
+        summary_data.append([alg, sum_of_cost, expanded, generated,total_time])
 
 
     #################################
@@ -267,8 +273,14 @@ def main():
 
 
 
-    columns = ["Algorithm", "Sum of Cost", "Expanded", "Generated"]
+    columns = ["Algorithm", "Sum of Cost", "Expanded", "Generated", "CPU Time (s)"]
     table_main = ax_main.table(cellText=summary_data, colLabels=columns, loc='center',bbox=[0, 0.65, 1, 0.95])
+
+    result_file = open("results.csv", "w", buffering=1)
+    print("SUMMARY DATA")
+    for alg, sum_of_cost, expanded, generated,total_time in summary_data:
+        result_file.write("{}\n{}\n{}\n{}\n\n".format(sum_of_cost, expanded, generated,total_time))
+    result_file.close()
 
     # Style the main table
     header_color = "#cef4ff"
