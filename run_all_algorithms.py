@@ -73,20 +73,30 @@ def run_single_algorithm(input_file, algorithm_name):
         for obstacle in obstacle_list:
             obstacle_location = obstacle['loc']
             current_time = timestep
-            for _ in range(obstacle['appearance_timestep']):
+            obstacle_appear_time = obstacle['appearance_timestep']
+
+            if obstacle_appear_time == -1: # permanent obstacle, then give inf constraint
                 for agent in range(number_agents):
-                    agent_constraints.append({'agent': agent, 'loc': obstacle_location,
-                                              'timestep': current_time, 'type': 'vertex'})
-                    start_pos = []
-                    for dir in directions:
-                        pos = (obstacle_location[0] + dir[0], obstacle_location[1] + dir[1])
-                        if pos[0] < 0 or pos[0] >= rows or pos[1] < 0 or pos[1] >= cols:
-                            continue
-                        start_pos.append(pos)
-                    for pos in start_pos:
-                        agent_constraints.append({'agent': agent, 'loc': [pos, obstacle_location],
-                                                  'timestep': current_time, 'type': 'edge'})
-                current_time += 1
+                    agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
+                                          'timestep': current_time, 'type': 'inf'})
+            else: # not a permanent obstacle, then add vertex and edge constraints
+                for _ in range(obstacle['appearance_timestep']): # add constraints to agents for as long as the obstacle
+                                                                # exist
+                    for agent in range(number_agents):
+                        agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
+                                                  'timestep': current_time, 'type': 'vertex'})
+                        start_pos = []
+                        for dir in directions:
+                            #prevent agent from going into the obstacle from 4 directions
+                            pos = (obstacle_location[0] + dir[0], obstacle_location[1] + dir[1])
+                            #do not add edge constraints that fall out of map
+                            if pos[0] < 0 or pos[0] >= rows or pos[1] < 0 or pos[1] >= cols:
+                                continue
+                            start_pos.append(pos)
+                        for pos in start_pos:
+                            agent_constraints.append({'agent': agent, 'loc': [pos, obstacle_location],
+                                                      'timestep': current_time, 'type': 'edge'})
+                    current_time += 1
 
     # Run the chosen MAPF algorithm
     if algorithm_name == "STA*":

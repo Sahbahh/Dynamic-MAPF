@@ -133,7 +133,7 @@ def is_constrained(curr_loc, next_loc, next_time, constraint_table, inf_constrai
                 return True
     # check if next location is at an infinite constraint then return True,
     # child node will not be added to closed list.
-    for inf_c in inf_constraints:
+    for inf_c, _ in inf_constraints.items():
         if inf_c == next_loc:
             return True
     return False
