@@ -9,26 +9,28 @@
     ],
     "timesteps": {
       "2": {
-        "add_obstacles": [[1,0]],
+        "add_obstacles": [[5,5]],
         "remove_obstacles": [],
         "change_goals": [[8,9],[8,8],[8,7],[8,6],[8,5]]
       },
       "4": {
-        "add_obstacles": [[1,1]],
+        "add_obstacles": [[4,6]],
         "remove_obstacles": []
       },
       "6": {
-        "add_obstacles": [[2,0]],
+        "add_obstacles": [[3,7]],
         "remove_obstacles": [],
+        "change_goals": []
+      },
+      "7": {
+        "add_obstacles": [[3,8]],
+        "remove_obstacles": [[3,7]],
         "change_goals": [[7,9],[7,8],[7,7],[7,6],[7,5]]
       },
       "8": {
-        "add_obstacles": [[2,1]],
-        "remove_obstacles": []
-      },
-      "10": {
-        "add_obstacles": [[3,0]],
-        "remove_obstacles": []
+        "add_obstacles": [[6,4],[7,4]],
+        "remove_obstacles": [[3,7]],
+        "change_goals":[]
       }
     }
   }
