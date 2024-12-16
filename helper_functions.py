@@ -45,7 +45,7 @@ def compile_obstacle_dict(input_data, input_timesteps, rows, cols, max_steps):
         for c in range(len(memo[0])):
             appear_time = memo[r][c]
             if 0 < appear_time <= max_obstacle_time:
-                appearance_timestep = max_steps - appear_time  # no remove command, so obstacle stay indefinitely until
+                appearance_timestep = -1  # no remove command, so obstacle stay indefinitely until
                                                             # max steps
                 new_c = {'appearance_timestep': appearance_timestep,
                          'loc': (r,c)}
@@ -112,6 +112,8 @@ def update_constraints(goal_timestep, paths, goal_list, starts, goals, constrain
         new_time = constraint['timestep'] - goal_timestep
         if new_time >= 0:
             constraint['timestep'] = new_time
+        elif constraint['type'] == 'inf': # do not remove infinite constraints
+            constraint['timestep'] = 0
         else:
             memo.append(i)
 
