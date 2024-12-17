@@ -81,7 +81,7 @@ def compile_goals_dict(input_data, input_timesteps):
 
     return result
 
-def update_constraints(goal_timestep, paths, goal_list, starts, goals, constraints):
+def update_constraints(new_start_time, goal_timestep, paths, goal_list, starts, goals, constraints):
     """
             Args:
                 goal_timestep (int): timestep of the changing goal
@@ -99,10 +99,10 @@ def update_constraints(goal_timestep, paths, goal_list, starts, goals, constrain
 
     #current agent position is the new starting point
     for agent in range(0, len(starts)):
-        if len(paths[agent]) <= goal_timestep:
+        if len(paths[agent]) <= new_start_time:
             new_start = paths[agent][-1]
         else:
-            new_start = paths[agent][goal_timestep]
+            new_start = paths[agent][new_start_time]
         starts[agent] = new_start
 
     # new timestep equals current timestep minus current goal timestep
@@ -112,7 +112,7 @@ def update_constraints(goal_timestep, paths, goal_list, starts, goals, constrain
         new_time = constraint['timestep'] - goal_timestep
         if new_time >= 0:
             constraint['timestep'] = new_time
-        elif constraint['type'] == 'inf': # do not remove infinite constraints
+        elif constraint['type'] == 'inf-obstacle': # do not remove infinite obstacles
             constraint['timestep'] = 0
         else:
             memo.append(i)

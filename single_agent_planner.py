@@ -85,7 +85,7 @@ def build_constraint_table(constraints, agent, goal_location):
                     result[timestep].append(new_c)
                 else:
                     result[timestep] = [new_c]
-            elif c['type'] == 'inf':
+            elif c['type'] == 'inf' or c['type'] == 'inf-obstacle':
                 # add special inf constraints
                 inf_constraints[c['loc'][0]] = new_c
 

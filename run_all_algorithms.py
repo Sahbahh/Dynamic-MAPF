@@ -1,5 +1,6 @@
 from input_parser import parse_input
-from helper_functions import initialize_single_agent_planner_map, replan, compile_obstacle_dict, compile_goals_dict, update_constraints
+from helper_functions import initialize_single_agent_planner_map, replan, compile_obstacle_dict, compile_goals_dict, \
+    update_constraints
 from map_validator import validate_map
 from single_agent_planner import compute_heuristics, get_sum_of_cost
 import matplotlib.pyplot as plt
@@ -78,24 +79,25 @@ def run_single_algorithm(input_file, algorithm_name):
             if obstacle_appear_time == -1: # permanent obstacle, then give inf constraint
                 for agent in range(number_agents):
                     agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
-                                          'timestep': current_time, 'type': 'inf'})
-            else: # not a permanent obstacle, then add vertex and edge constraints
-                for _ in range(obstacle['appearance_timestep']): # add constraints to agents for as long as the obstacle
-                                                                # exist
+                                              'timestep': current_time, 'type': 'inf-obstacle'})
+            else:  # not a permanent obstacle, then add vertex and edge constraints
+                for _ in range(
+                        obstacle['appearance_timestep']):  # add constraints to agents for as long as the obstacle
+                    # exist
                     for agent in range(number_agents):
                         agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
                                                   'timestep': current_time, 'type': 'vertex'})
                         start_pos = []
                         for dir in directions:
-                            #prevent agent from going into the obstacle from 4 directions
+                            # prevent agent from going into the obstacle from 4 directions
                             pos = (obstacle_location[0] + dir[0], obstacle_location[1] + dir[1])
-                            #do not add edge constraints that fall out of map
+                            # do not add edge constraints that fall out of map
                             if pos[0] < 0 or pos[0] >= rows or pos[1] < 0 or pos[1] >= cols:
                                 continue
                             start_pos.append(pos)
                         for pos in start_pos:
                             agent_constraints.append({'agent': agent, 'loc': [pos, obstacle_location],
-                                                      'timestep': current_time, 'type': 'edge'})
+                                                      'timestep': current_time + 1, 'type': 'edge'})
                     current_time += 1
 
     # Run the chosen MAPF algorithm
@@ -128,17 +130,23 @@ def run_single_algorithm(input_file, algorithm_name):
     constraints = copy.deepcopy(agent_constraints)
     new_result = []
 
-    for goal_timestep, goal_list in goal_dictionary.items():
+    sorted_goal_timestep = sorted(goal_dictionary.keys())
+
+    for i in range(len(sorted_goal_timestep)):
         # Extend all paths to the longest path
         max_path = len(reduce(lambda x, y: x if len(x) > len(y) else y, result))
-        for i, p in enumerate(result):
+        for j, p in enumerate(result):
             p_len = max_path - len(p)
             if p_len > 0:
-                last_pos = result[i][-1]
-                for j in range(p_len):
-                    result[i].append(last_pos)
+                last_pos = result[j][-1]
+                for _ in range(p_len):
+                    result[j].append(last_pos)
 
-        update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
+        goal_timestep = sorted_goal_timestep[i]
+        goal_list = goal_dictionary.get(goal_timestep)
+        update_constraint_time = goal_timestep if i == 0 else goal_timestep - sorted_goal_timestep[i - 1]
+
+        update_constraints(goal_timestep - 1, update_constraint_time, result, goal_list, starts, goals, constraints)
 
         if algorithm_name == "STA*":
             solver = SpaceTimePlanningSolver(single_agent_planner_map, starts, goals, constraints,
@@ -160,11 +168,11 @@ def run_single_algorithm(input_file, algorithm_name):
         expansions_cumulative += getattr(solver, 'num_of_expanded', 0)
         generated_cumulative += getattr(solver, 'num_of_generated', 0)
 
-        for i, _ in enumerate(result):
-            if i < len(new_result):
-                result[i] = result[i][:goal_timestep - 1] + new_result[i]
+        for j, _ in enumerate(result):
+            if j < len(new_result):
+                result[j] = result[j][:goal_timestep - 1] + new_result[j]
             else:
-                print(f"Warning: No new path found for agent {i}. Keeping the original path.")
+                print(f"Warning: No new path found for agent {j}. Keeping the original path.")
     # Record algorithm time and format to 6 decimal points
     total_time = format(timer.time() - start_time, '.6f')
 
@@ -241,7 +249,7 @@ def main():
     fig = plt.figure(figsize=(10, 5))
     
     # map info row
-    ax_info = fig.add_subplot(211) 
+    ax_info = fig.add_subplot(211)
     ax_info.set_title("Comparison of the Algorithms", fontsize=16, pad=1)
     ax_info.axis('off')
     

@@ -11,7 +11,7 @@ def detect_collision(path1, path2):
         loc2 = get_location(path2, t_step)
         if loc1 == loc2:
             return {'loc': [loc1], 'timestep': t_step}
-        
+
         # Check edge collision
         if t_step < min(len(path1), len(path2)) - 1:
             next_loc1 = get_location(path1, t_step + 1)
@@ -27,18 +27,23 @@ def detect_collisions(paths):
         for agent2 in range(agent1 + 1, len(paths)):
             collision = detect_collision(paths[agent1], paths[agent2])
             if collision:
-                collisions.append({'a1': agent1, 'a2': agent2, 'loc': collision['loc'], 'timestep': collision['timestep']})
+                collisions.append(
+                    {'a1': agent1, 'a2': agent2, 'loc': collision['loc'], 'timestep': collision['timestep']})
     return collisions
 
 
 def standard_splitting(collision):
     constraints = []
     if len(collision['loc']) == 1:  # Vertex collision
-        constraints.append({'agent': collision['a1'], 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
-        constraints.append({'agent': collision['a2'], 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
+        constraints.append(
+            {'agent': collision['a1'], 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
+        constraints.append(
+            {'agent': collision['a2'], 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
     elif len(collision['loc']) == 2:  # Edge collision
-        constraints.append({'agent': collision['a1'], 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
-        constraints.append({'agent': collision['a2'], 'loc': collision['loc'][::-1], 'timestep': collision['timestep'], 'positive': False})
+        constraints.append(
+            {'agent': collision['a1'], 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
+        constraints.append({'agent': collision['a2'], 'loc': collision['loc'][::-1], 'timestep': collision['timestep'],
+                            'positive': False})
     return constraints
 
 
@@ -47,11 +52,15 @@ def disjoint_splitting(collision):
     other_agent = collision['a1'] if chosen_agent == collision['a2'] else collision['a2']
     constraints = []
     if len(collision['loc']) == 1:  # Vertex collision
-        constraints.append({'agent': chosen_agent, 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': True})
-        constraints.append({'agent': other_agent, 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
+        constraints.append(
+            {'agent': chosen_agent, 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': True})
+        constraints.append(
+            {'agent': other_agent, 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': False})
     elif len(collision['loc']) == 2:  # Edge collision
-        constraints.append({'agent': chosen_agent, 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': True})
-        constraints.append({'agent': other_agent, 'loc': collision['loc'][::-1], 'timestep': collision['timestep'], 'positive': False})
+        constraints.append(
+            {'agent': chosen_agent, 'loc': collision['loc'], 'timestep': collision['timestep'], 'positive': True})
+        constraints.append(
+            {'agent': other_agent, 'loc': collision['loc'][::-1], 'timestep': collision['timestep'], 'positive': False})
     return constraints
 
 
@@ -95,9 +104,10 @@ class CBSSolver:
 
         # Find initial path for each agent
         for i in range(self.num_of_agents):
-            path, expansions, generated = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i, root['constraints'])
+            path, expansions, generated = a_star(self.my_map, self.starts[i], self.goals[i], self.heuristics[i], i,
+                                                 root['constraints'])
             if path is None:
-                raise BaseException("No solutions")
+                return []
             self.num_of_expanded += expansions
             self.num_of_generated += generated
             root['paths'].append(path)

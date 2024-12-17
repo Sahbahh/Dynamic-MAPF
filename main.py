@@ -112,35 +112,40 @@ def main():
 
     max_steps = 100  # Maximum allowed steps to prevent infinite loops
 
-    # for edge constraints
-    directions = [(0, -1), (1, 0), (0, 1), (-1, 0)]
-
     # record all obstacles creation and how many time steps they last
     obstacle_dictionary = compile_obstacle_dict(input_data, input_data_timesteps, rows, cols, max_steps)
 
+    # Add obstacle constraints
+    directions = [(0, -1), (1, 0), (0, 1), (-1, 0)]
     for timestep, obstacle_list in obstacle_dictionary.items():
         for obstacle in obstacle_list:
             obstacle_location = obstacle['loc']
             current_time = timestep
-            # appearance time step is how long an obstacle will stay there for
-            for _ in range(obstacle['appearance_timestep']):
+            obstacle_appear_time = obstacle['appearance_timestep']
+
+            if obstacle_appear_time == -1:  # permanent obstacle, then give inf constraint
                 for agent in range(number_agents):
-                    #vertex constraints
-                    agent_constraints.append({'agent': agent, 'loc': obstacle_location,
-                                        'timestep': current_time, 'type': 'vertex'})
-
-                    #edge constraints
-                    start_pos = []
-                    for dir in directions:
-                        pos = (obstacle_location[0] + dir[0], obstacle_location[1] + dir[1])
-                        if pos[0] < 0 or pos[0] >= rows or pos[1] < 0 or pos[1] >= cols: #out of map
-                            continue
-                        start_pos.append(pos)
-                    for pos in start_pos:
-                        agent_constraints.append({'agent': agent, 'loc': [pos,obstacle_location],
-                                            'timestep': current_time,'type': 'edge'})
-
-                current_time += 1
+                    agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
+                                              'timestep': current_time, 'type': 'inf-obstacle'})
+            else:  # not a permanent obstacle, then add vertex and edge constraints
+                for _ in range(
+                        obstacle['appearance_timestep']):  # add constraints to agents for as long as the obstacle
+                    # exist
+                    for agent in range(number_agents):
+                        agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
+                                                  'timestep': current_time, 'type': 'vertex'})
+                        start_pos = []
+                        for dir in directions:
+                            # prevent agent from going into the obstacle from 4 directions
+                            pos = (obstacle_location[0] + dir[0], obstacle_location[1] + dir[1])
+                            # do not add edge constraints that fall out of map
+                            if pos[0] < 0 or pos[0] >= rows or pos[1] < 0 or pos[1] >= cols:
+                                continue
+                            start_pos.append(pos)
+                        for pos in start_pos:
+                            agent_constraints.append({'agent': agent, 'loc': [pos, obstacle_location],
+                                                      'timestep': current_time + 1, 'type': 'edge'})
+                    current_time += 1
 
     # Replan all agent paths using added constraints with a star search.
     print("RESULT PATH WITH OBSTACLE CONSTRAINTS")
@@ -204,65 +209,46 @@ def main():
     constraints = copy.deepcopy(agent_constraints)
     new_result = []
 
-    for goal_timestep, goal_list in goal_dictionary.items():
+    sorted_goal_timestep = sorted(goal_dictionary.keys())
 
-
-        # extend all paths to the longest path
+    for i in range(len(sorted_goal_timestep)):
+        # Extend all paths to the longest path
         max_path = len(reduce(lambda x, y: x if len(x) > len(y) else y, result))
-        for i, p in enumerate(result):
+        for j, p in enumerate(result):
             p_len = max_path - len(p)
             if p_len > 0:
-                last_pos = result[i][-1]
-                for j in range(p_len):
-                    result[i].append(last_pos)
+                last_pos = result[j][-1]
+                for _ in range(p_len):
+                    result[j].append(last_pos)
 
-        # change start/goals/constraints to match new timestep
-        # goal timestep is 1-index so change to 0-index
-        # update constraints is in helper functions
-        update_constraints(goal_timestep - 1, result, goal_list, starts, goals, constraints)
+        goal_timestep = sorted_goal_timestep[i]
+        goal_list = goal_dictionary.get(goal_timestep)
+        update_constraint_time = goal_timestep if i == 0 else goal_timestep - sorted_goal_timestep[i - 1]
 
-        # recompute heuristics due to changing goal positions
-        heuristics = []
-        for goal in agent_goals:
-            heuristics.append(compute_heuristics(single_agent_planner_map, goal))
+        update_constraints(goal_timestep - 1, update_constraint_time, result, goal_list, starts, goals, constraints)
 
-        # ADD MORE SEARCH ALGORITHMS HERE
         if args.algorithm == "STA*":
-            print("***Run Space Time A with changing goals****")
             solver = SpaceTimePlanningSolver(single_agent_planner_map, starts, goals, constraints,
                                              max_steps)
             new_result = solver.find_solution()
         elif args.algorithm == "Prioritized":
-            print("***Run Prioritized with changing goals***")
             solver = PrioritizedPlanningSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution()
-
         elif args.algorithm == "CBS":
-            print("***Run CBS with changing goals***")
             solver = CBSSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution(disjoint=False)
-
         elif args.algorithm == "CBS Disjoint":
-            print("***Run CBS with disjoint splitting and changing goals***")
             solver = CBSSolver(single_agent_planner_map, starts, goals, constraints)
             new_result = solver.find_solution(disjoint=True)
-
-
         elif args.algorithm == "LNS":
+            solver = LNSSolver(single_agent_planner_map, starts, goals, constraints)
+            new_result = solver.find_solution()
 
-            print("***Initialize Large Neighborhood Search***")
-
-            solver = LNSSolver(single_agent_planner_map, agent_starts, agent_goals, agent_constraints)
-
-            result = solver.find_solution()
-
-        # update resulting path by slicing
-        # new path: old path from timestep 0 to new goal timestep + new path
-        for i, _ in enumerate(result):
-            if i < len(new_result):
-                result[i] = result[i][:goal_timestep - 1] + new_result[i]
+        for j, _ in enumerate(result):
+            if j < len(new_result):
+                result[j] = result[j][:goal_timestep - 1] + new_result[j]
             else:
-                print(f"Warning: No new path found for agent {i}. Keeping the original path.")
+                print(f"Warning: No new path found for agent {j}. Keeping the original path.")
 
     print("DYNAMIC OBSTACLES + DYNAMIC GOALS + COLLISION DETECTION AGENT PATHS")
     for i, p in enumerate(result):
