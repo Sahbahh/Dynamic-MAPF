@@ -1,6 +1,13 @@
 # Dynamic Multi-Agent Path Finding (Dynamic MAPF)
 This project investigates how various algorithms perform under Dynamic Multi-Agent Path Finding (MAPF) conditions. Dynamic MAPF introduces additional complexity to the traditional MAPF problem by incorporating changes to the environment, such as newly appearing or disappearing obstacles and shifting agent goals.
 
+## Contributers:
+Saba Siddiqi
+Sahba Hajihoseini
+Hani Nguyen
+
+Fall 2024
+
 ## Objectives
 Our research focuses on:
 
@@ -24,7 +31,7 @@ We created multiple series of maps, each designed to highlight different aspects
 * Randomly Generated Series: Changes occur at random times and locations to test average-case adaptability.
 
 Each series allows us to isolate and study the effect of one factor (e.g., obstacle frequency) on algorithm performance. 
-Sample map (maps/goal_frequency_s3_map3.json):
+Sample map (`maps/goal_frequency_s3_map3.json`):
 ![Alt text](sample_outputs/sample_map.png?raw=true "Sample map")
 
 ## Running the Algorithms
@@ -41,6 +48,8 @@ Sample:
 ```bash
 python3 main.py d_map4.json --algorithm "CBS Disjoint"
 ```
+
+
 To run all algorithms on a map and compare their performance:
 ```bash
 python3 run_all_algorithms.py maps/<input_file>
@@ -49,7 +58,6 @@ Sample:
 ```bash
 python3 run_all_algorithms.py maps/goal_frequency_s3_map2.json
 ```
-This command outputs a summary table comparing cost, expanded nodes, generated nodes—across, and CPU time for all algorithms.
 
 Sample output:
 ![Alt text](sample_outputs/sample_comparison_table.png?raw=true "Sample comparison table")
