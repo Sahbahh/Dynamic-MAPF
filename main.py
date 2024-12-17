@@ -133,7 +133,7 @@ def main():
                     # exist
                     for agent in range(number_agents):
                         agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
-                                                  'timestep': current_time, 'type': 'vertex'})
+                                                  'timestep': current_time, 'type': 'vertex-obstacle'})
                         start_pos = []
                         for dir in directions:
                             # prevent agent from going into the obstacle from 4 directions
@@ -144,7 +144,7 @@ def main():
                             start_pos.append(pos)
                         for pos in start_pos:
                             agent_constraints.append({'agent': agent, 'loc': [pos, obstacle_location],
-                                                      'timestep': current_time + 1, 'type': 'edge'})
+                                                      'timestep': current_time + 1, 'type': 'edge-obstacle'})
                     current_time += 1
 
     # Replan all agent paths using added constraints with a star search.
