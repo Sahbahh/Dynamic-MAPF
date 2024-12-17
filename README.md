@@ -2,11 +2,11 @@
 This project investigates how various algorithms perform under Dynamic Multi-Agent Path Finding (MAPF) conditions. Dynamic MAPF introduces additional complexity to the traditional MAPF problem by incorporating changes to the environment, such as newly appearing or disappearing obstacles and shifting agent goals.
 
 ## Contributers:
-Saba Siddiqi
-Sahba Hajihoseini
-Hani Nguyen
+- Saba Siddiqi  
+- Sahba Hajihoseini  
+- Hani Nguyen  
 
-Fall 2024
+**Fall 2024**
 
 ## Objectives
 Our research focuses on:
@@ -59,5 +59,5 @@ Sample:
 python3 run_all_algorithms.py maps/goal_frequency_s3_map2.json
 ```
 
-Sample output:
-![Alt text](sample_outputs/sample_comparison_table.png?raw=true "Sample comparison table")
+Sample output:  
+<img src="sample_outputs/sample_comparison_table.png" alt="Sample comparison table" width="600px" />
