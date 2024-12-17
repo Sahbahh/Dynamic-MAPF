@@ -14,38 +14,73 @@
       "change_goals": [[9,18],[9,17],[8,17],[8,16],[9,14]]
     },
     "3": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
       "change_goals": [[9,17],[9,16],[7,17],[7,16],[9,13]]
     },
     "4": {
       "add_obstacles": [[2,16],[3,15],[4,14]],
       "remove_obstacles": [],
-      "change_goals": [[9,16],[8,16],[6,17],[6,16],[7,13]]
+      "change_goals": [[9,1],[8,5],[6,0],[6,3],[8,3]]
     },
     "5": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
       "change_goals": [[9,15],[7,16],[5,17],[5,16],[7,11]]
     },
     "6": {
       "add_obstacles": [[4,9],[4,10],[4,11]],
       "remove_obstacles": [[4,14]],
-      "change_goals": [[9,15],[7,15],[4,17],[4,16],[6,19]]
+      "change_goals": [[9,15],[7,15],[4,17],[4,16],[2,11]]
     },
     "7": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
       "change_goals": [[9,15],[7,14],[3,17],[4,16],[5,10]]
     },
     "8": {
       "add_obstacles": [[5,10],[5,11],[0,11]],
       "remove_obstacles": [],
-      "change_goals": [[9,15],[7,13],[2,17],[4,16],[4,16]]
+      "change_goals": [[9,15],[7,13],[2,17],[4,16],[0,9]]
     },
     "9": {
-      "change_goals": [[9,15],[0,12],[1,17],[4,16],[4,8]]
+      "add_obstacles": [],
+      "remove_obstacles": [],
+      "change_goals": [[9,15],[3,12],[1,17],[4,16],[4,8]]
     },
     "10": {
-      "add_obstacles": [[6,9],[7,9],[5,1],[4,2]],
+      "add_obstacles": [],
       "remove_obstacles": [[5,10]],
-      "change_goals": [[9,15],[6,12],[0,17],[4,16],[4,5]]
+      "change_goals": [[9,15],[6,12],[0,17],[4,16],[4,7]]
     },
     "11": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
+      "change_goals": [[0,17],[9,15],[1,1],[4,6],[3,16]]
+    },
+    "12": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
+      "change_goals": [[9,15],[6,12],[0,17],[4,16],[4,5]]
+    },
+    "13": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
+      "change_goals": [[9,10],[3,8],[0,17],[9,12],[4,4]]
+    },
+    "14": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
+      "change_goals": [[8,12],[3,9],[1,17],[9,12],[4,8]]
+    },
+    "15": {
+      "add_obstacles": [],
+      "remove_obstacles": [],
+      "change_goals": [[9,15],[6,13],[0,17],[4,16],[9,19]]
+    },
+    "16": {
+      "add_obstacles": [[6,9],[7,9],[5,1],[4,2]],
+      "remove_obstacles": [],
       "change_goals": [[9,15],[6,12],[0,18],[4,16],[4,1]]
     }
   }
