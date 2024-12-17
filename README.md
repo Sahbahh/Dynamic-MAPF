@@ -32,6 +32,7 @@ We created multiple series of maps, each designed to highlight different aspects
 
 Each series allows us to isolate and study the effect of one factor (e.g., obstacle frequency) on algorithm performance. 
 Sample map (`maps/goal_frequency_s3_map3.json`):
+
 ![Alt text](sample_outputs/sample_map.png?raw=true "Sample map")
 
 ## Running the Algorithms
@@ -59,5 +60,5 @@ Sample:
 python3 run_all_algorithms.py maps/goal_frequency_s3_map2.json
 ```
 
-Sample output:  
-<img src="sample_outputs/sample_comparison_table.png" alt="Sample comparison table" width="600px" />
+Sample output:
+![Alt text](sample_outputs/sample_comparison_table.png?raw=true "Sample comparison table")
