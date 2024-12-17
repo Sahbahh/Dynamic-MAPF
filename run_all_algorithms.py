@@ -86,7 +86,7 @@ def run_single_algorithm(input_file, algorithm_name):
                     # exist
                     for agent in range(number_agents):
                         agent_constraints.append({'agent': agent, 'loc': [obstacle_location],
-                                                  'timestep': current_time, 'type': 'vertex'})
+                                                  'timestep': current_time, 'type': 'vertex-obstacle'})
                         start_pos = []
                         for dir in directions:
                             # prevent agent from going into the obstacle from 4 directions
@@ -97,7 +97,7 @@ def run_single_algorithm(input_file, algorithm_name):
                             start_pos.append(pos)
                         for pos in start_pos:
                             agent_constraints.append({'agent': agent, 'loc': [pos, obstacle_location],
-                                                      'timestep': current_time + 1, 'type': 'edge'})
+                                                      'timestep': current_time + 1, 'type': 'edge-obstacle'})
                     current_time += 1
 
     # Run the chosen MAPF algorithm
@@ -120,6 +120,15 @@ def run_single_algorithm(input_file, algorithm_name):
     else:
         print(f"Algorithm {algorithm_name} not implemented in run_all_algorithms.")
         return None
+
+    # After all dynamic changes, create a dummy solver-like object to return
+    class FinalSolverStats:
+        pass
+
+    if(len(result) == 0): #no solution
+        final_solver_stats = FinalSolverStats()
+        total_time = format(timer.time() - start_time, '.6f')
+        return result, final_solver_stats, total_time
 
     # Initialize cumulative expansions and generations
     expansions_cumulative = getattr(solver, 'num_of_expanded', 0)
@@ -175,10 +184,6 @@ def run_single_algorithm(input_file, algorithm_name):
                 print(f"Warning: No new path found for agent {j}. Keeping the original path.")
     # Record algorithm time and format to 6 decimal points
     total_time = format(timer.time() - start_time, '.6f')
-
-    # After all dynamic changes, create a dummy solver-like object to return
-    class FinalSolverStats:
-        pass
 
     final_solver_stats = FinalSolverStats()
     final_solver_stats.num_of_expanded = expansions_cumulative
@@ -287,9 +292,6 @@ def main():
     ax_main = fig.add_subplot(212)
     ax_main.axis('off')
     ax_main = plt.gca()
-
-
-
 
     columns = ["Algorithm", "Sum of Cost", "Expanded", "Generated", "CPU Time (s)"]
     table_main = ax_main.table(cellText=summary_data, colLabels=columns, loc='center',bbox=[0, 0.65, 1, 0.95])

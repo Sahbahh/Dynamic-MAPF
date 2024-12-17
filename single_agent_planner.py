@@ -80,7 +80,7 @@ def build_constraint_table(constraints, agent, goal_location):
 
             new_c = {'loc': c['loc'], 'type': c['type'], 'positive': c['positive']}
 
-            if c['type'] in ['vertex', 'edge']:
+            if c['type'] in ['vertex', 'edge','vertex-obstacle', 'edge-obstacle']:
                 if timestep in result:
                     result[timestep].append(new_c)
                 else:

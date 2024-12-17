@@ -109,11 +109,17 @@ def update_constraints(new_start_time, goal_timestep, paths, goal_list, starts, 
     # remove constraints with timestep < 0
     memo = []
     for i, constraint in enumerate(constraints):
-        new_time = constraint['timestep'] - goal_timestep
-        if new_time >= 0:
-            constraint['timestep'] = new_time
-        elif constraint['type'] == 'inf-obstacle': # do not remove infinite obstacles
-            constraint['timestep'] = 0
+        if constraint['type'] == 'inf-obstacle': # keep inf obstacle constraints
+            new_time = constraint['timestep'] - goal_timestep
+            if new_time >= 0:
+                constraint['timestep'] = new_time
+            else:
+                constraint['timestep'] = 0
+        elif constraint['type'] == 'vertex-obstacle' or constraint['type'] == 'edge-obstacle': # keep obstacle
+                                                                                        # vertex/edge constraints
+            new_time = constraint['timestep'] - goal_timestep
+            if new_time >= 0:
+                constraint['timestep'] = new_time
         else:
             memo.append(i)
 

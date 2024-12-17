@@ -9,7 +9,7 @@
     ],
     "timesteps": {
       "2": {
-        "add_obstacles": [[0,3]],
+        "add_obstacles": [[0,2]],
         "remove_obstacles": [],
         "change_goals": [[0,4],[2,4],[4,4],[6,4],[8,4]]
       },
