@@ -62,3 +62,7 @@ python3 run_all_algorithms.py maps/goal_frequency_s3_map2.json
 
 Sample output:
 ![Alt text](sample_outputs/sample_comparison_table.png?raw=true "Sample comparison table")
+
+
+## Note
+This project is inspired by individual assignment from CMPT417 Fall 2024, Simon Fraser University. 
