@@ -1,0 +1,17 @@
+{
+    "map_dimensions": [4, 4],
+    "agents": [
+        {"start": [0, 0], "goal": [3, 3]},
+        {"start": [3, 0], "goal": [0, 3]}
+    ],
+    "timesteps": {
+        "1": {
+            "add_obstacles": [[1, 1], [2, 2]],
+            "remove_obstacles": []
+        },
+        "2": {
+            "add_obstacles": [[1, 2]],
+            "remove_obstacles": [[1, 1]]
+        }
+    }
+}
